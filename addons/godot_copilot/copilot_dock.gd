@@ -340,7 +340,11 @@ func _stream_request_thread(request_data: Dictionary) -> void:
 	
 	# Create HTTP client
 	var http := HTTPClient.new()
-	var err := http.connect_to_host(host, port)
+	var err: int
+	if use_ssl:
+		err = http.connect_to_host(host, port, TLSOptions.client())
+	else:
+		err = http.connect_to_host(host, port)
 	if err != OK:
 		call_deferred("_on_stream_error", "Failed to connect to host")
 		return
@@ -375,6 +379,7 @@ func _stream_request_thread(request_data: Dictionary) -> void:
 	}
 	
 	var headers := PackedStringArray([
+		"Host: " + host,
 		"Content-Type: application/json",
 		"Authorization: Bearer " + api_key,
 		"Accept: text/event-stream"
