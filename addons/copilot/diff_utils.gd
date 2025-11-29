@@ -3,6 +3,8 @@ extends RefCounted
 
 ## Utility class for parsing and applying unified diff format changes
 
+const LOOKAHEAD_LINES = 5
+
 
 ## Parse a unified diff and return a list of hunks
 ## Each hunk is a dictionary with: start_line, delete_count, insert_lines
@@ -237,7 +239,7 @@ static func generate_diff(old_text: String, new_text: String) -> String:
 
 
 static func _find_line(line: String, lines: Array, start: int) -> int:
-	for i in range(start, mini(start + 5, lines.size())):
+	for i in range(start, mini(start + LOOKAHEAD_LINES, lines.size())):
 		if lines[i] == line:
 			return i
 	return -1
