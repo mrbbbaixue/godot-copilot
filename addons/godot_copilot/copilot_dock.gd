@@ -175,12 +175,12 @@ func _on_read_code_pressed() -> void:
 	if not plugin:
 		return
 	
-	var code := plugin.get_current_code()
+	var code = plugin.get_current_code()
 	if code.is_empty():
 		_add_system_message("No script is currently open in the editor.")
 		return
 	
-	var script := plugin.get_current_script()
+	var script = plugin.get_current_script()
 	var script_name := "Unknown"
 	if script:
 		script_name = script.resource_path.get_file()
