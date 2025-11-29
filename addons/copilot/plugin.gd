@@ -1,15 +1,15 @@
 @tool
 extends EditorPlugin
 
-const CopilotDock = preload("res://addons/godot_copilot/copilot_dock.gd")
-const SettingsDialog = preload("res://addons/godot_copilot/settings_dialog.gd")
+const CopilotDock = preload("res://addons/copilot/copilot_dock.gd")
+const SettingsDialog = preload("res://addons/copilot/settings_dialog.gd")
 
 var dock: Control
 var settings_dialog: AcceptDialog
 
 # Settings storage
 var config := ConfigFile.new()
-var config_path := "user://godot_copilot.cfg"
+var config_path := "user://copilot.cfg"
 
 
 func _enter_tree() -> void:
