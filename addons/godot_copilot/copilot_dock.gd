@@ -133,7 +133,12 @@ func _process(_delta: float) -> void:
 
 
 func _exit_tree() -> void:
-	_stop_streaming()
+	# Stop streaming thread before cleanup
+	if is_streaming:
+		should_stop_stream = true
+		if stream_thread and stream_thread.is_started():
+			stream_thread.wait_to_finish()
+		is_streaming = false
 
 
 func _on_stop_pressed() -> void:
@@ -147,9 +152,11 @@ func _stop_streaming() -> void:
 			stream_thread.wait_to_finish()
 		is_streaming = false
 		should_stop_stream = false
-		send_button.visible = true
-		stop_button.visible = false
-		send_button.disabled = false
+		if send_button:
+			send_button.visible = true
+			send_button.disabled = false
+		if stop_button:
+			stop_button.visible = false
 
 
 func _on_settings_pressed() -> void:
