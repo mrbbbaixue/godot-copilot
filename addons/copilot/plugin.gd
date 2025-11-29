@@ -87,6 +87,76 @@ func get_current_code() -> String:
 	return ""
 
 
+func get_current_script_path() -> String:
+	var script := get_current_script()
+	if script:
+		return script.resource_path
+	return ""
+
+
+## Find the scene file (.tscn) that references the current script
+func find_scene_for_script(script_path: String) -> String:
+	if script_path.is_empty():
+		return ""
+	
+	# Search for .tscn files in the project that reference this script
+	var scenes := _find_all_scenes("res://")
+	
+	for scene_path in scenes:
+		var content := _read_file_content(scene_path)
+		if content.contains(script_path):
+			return scene_path
+	
+	return ""
+
+
+## Read the content of a scene file (.tscn)
+func read_scene_content(scene_path: String) -> String:
+	if scene_path.is_empty():
+		return ""
+	return _read_file_content(scene_path)
+
+
+## Find all .tscn files recursively in a directory
+func _find_all_scenes(dir_path: String) -> Array:
+	var scenes := []
+	var dir := DirAccess.open(dir_path)
+	
+	if dir:
+		dir.list_dir_begin()
+		var file_name := dir.get_next()
+		
+		while file_name != "":
+			if file_name.begins_with("."):
+				file_name = dir.get_next()
+				continue
+			
+			var full_path := dir_path.path_join(file_name)
+			
+			if dir.current_is_dir():
+				# Skip addons folder to avoid searching plugin files
+				if file_name != "addons":
+					scenes.append_array(_find_all_scenes(full_path))
+			elif file_name.ends_with(".tscn"):
+				scenes.append(full_path)
+			
+			file_name = dir.get_next()
+		
+		dir.list_dir_end()
+	
+	return scenes
+
+
+## Read file content as string
+func _read_file_content(file_path: String) -> String:
+	var file := FileAccess.open(file_path, FileAccess.READ)
+	if file:
+		var content := file.get_as_text()
+		file.close()
+		return content
+	return ""
+
+
 func set_current_code(code: String) -> void:
 	var editor := get_current_script_editor()
 	if editor:

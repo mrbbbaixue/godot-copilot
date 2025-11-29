@@ -7,7 +7,9 @@ AI-assisted development plugin for the Godot Engine. Chat with AI models and app
 - 🤖 **AI Chat Panel**: Chat with AI models directly in the Godot editor
 - ⚙️ **Custom API Configuration**: Support for OpenAI and any OpenAI-compatible API (like Ollama, Azure OpenAI, etc.)
 - 📖 **Read Current Code**: Automatically read the currently open script and add it to the conversation context
+- 🎬 **Read Scene Context**: Automatically find and read the scene file (.tscn) that uses the current script
 - ✏️ **Apply Code Changes**: Apply AI-generated code directly to your current script
+- 📝 **Diff Mode**: Use unified diff format for code changes to save output time and see exactly what changed
 
 ## Installation
 
@@ -45,17 +47,30 @@ AI-assisted development plugin for the Godot Engine. Chat with AI models and app
 ## Usage
 
 1. Open a GDScript file in the Godot editor
-2. Click **📖 Read Current Code** to add the current script to the conversation context
-3. Type your question or request in the chat input
-4. Click **Send** to get a response from the AI
-5. If the AI provides code, click **✏ Apply Code** to apply it to your current script
+2. Click **📖 Read Code** to add the current script to the conversation context
+3. (Optional) Click **🎬 Read Scene** to add the associated scene file (.tscn) to the context
+4. Type your question or request in the chat input
+5. Click **Send** to get a response from the AI
+6. If the AI provides code:
+   - Click **✏ Apply Code** to replace your current script with the AI-generated code
+   - Or click **📝 Apply Diff** to apply only the changed lines (when in diff mode)
+
+### Diff Mode
+
+Enable **Diff Mode** checkbox for more efficient code changes:
+- AI will respond with unified diff format showing only changed lines
+- Saves output time for large files
+- Makes changes more visible with context
+- Use **📝 Apply Diff** button to apply the changes
 
 ## Tips
 
 - When asking for code modifications, the AI will provide code in markdown code blocks
 - The "Apply Code" button extracts code from the AI's response and replaces your current script content
+- The "Apply Diff" button applies only the changed lines when using diff format
 - Use clear and specific prompts for best results
 - You can clear the chat history with the **🗑** button
+- Reading the scene file provides context about node structure, exported properties, and resources
 
 ## License
 

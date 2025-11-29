@@ -3,6 +3,7 @@ extends VBoxContainer
 
 const LLMClient = preload("llm_client.gd")
 const MarkdownParser = preload("markdown_parser.gd")
+const DiffUtils = preload("diff_utils.gd")
 
 var plugin: EditorPlugin
 
@@ -13,8 +14,11 @@ var send_button: Button
 var settings_button: Button
 var clear_button: Button
 var apply_code_button: Button
+var apply_diff_button: Button
 var read_code_button: Button
+var read_scene_button: Button
 var stop_button: Button
+var diff_mode_checkbox: CheckBox
 
 # API client
 var llm_client: LLMClient
@@ -22,6 +26,12 @@ var llm_client: LLMClient
 # Chat history
 var messages := []
 var current_response := ""
+
+# Mode settings
+var diff_mode_enabled := false
+
+# Context tracking
+var current_script_path := ""
 
 
 func _init() -> void:
@@ -52,23 +62,56 @@ func _setup_ui() -> void:
 	clear_button.pressed.connect(_on_clear_pressed)
 	header.add_child(clear_button)
 	
-	# Code action buttons
+	# Mode options row
+	var mode_row := HBoxContainer.new()
+	mode_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	add_child(mode_row)
+	
+	diff_mode_checkbox = CheckBox.new()
+	diff_mode_checkbox.text = "Diff Mode"
+	diff_mode_checkbox.tooltip_text = "Use diff format for code changes (saves output time)"
+	diff_mode_checkbox.toggled.connect(_on_diff_mode_toggled)
+	mode_row.add_child(diff_mode_checkbox)
+	
+	# Code action buttons - first row
 	var code_actions := HBoxContainer.new()
 	code_actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(code_actions)
 	
 	read_code_button = Button.new()
-	read_code_button.text = "📖 Read Current Code"
+	read_code_button.text = "📖 Read Code"
+	read_code_button.tooltip_text = "Read current script and add to context"
 	read_code_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	read_code_button.pressed.connect(_on_read_code_pressed)
 	code_actions.add_child(read_code_button)
 	
+	read_scene_button = Button.new()
+	read_scene_button.text = "🎬 Read Scene"
+	read_scene_button.tooltip_text = "Read the scene file (.tscn) that uses this script"
+	read_scene_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	read_scene_button.pressed.connect(_on_read_scene_pressed)
+	code_actions.add_child(read_scene_button)
+	
+	# Code action buttons - second row
+	var apply_actions := HBoxContainer.new()
+	apply_actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	add_child(apply_actions)
+	
 	apply_code_button = Button.new()
 	apply_code_button.text = "✏ Apply Code"
+	apply_code_button.tooltip_text = "Replace current script with AI-generated code"
 	apply_code_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	apply_code_button.pressed.connect(_on_apply_code_pressed)
 	apply_code_button.disabled = true
-	code_actions.add_child(apply_code_button)
+	apply_actions.add_child(apply_code_button)
+	
+	apply_diff_button = Button.new()
+	apply_diff_button.text = "📝 Apply Diff"
+	apply_diff_button.tooltip_text = "Apply diff changes to current script"
+	apply_diff_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	apply_diff_button.pressed.connect(_on_apply_diff_pressed)
+	apply_diff_button.disabled = true
+	apply_actions.add_child(apply_diff_button)
 	
 	# Main content area with split container
 	var split_container := VSplitContainer.new()
@@ -154,8 +197,18 @@ func _on_settings_pressed() -> void:
 func _on_clear_pressed() -> void:
 	messages.clear()
 	current_response = ""
+	current_script_path = ""
 	_update_chat_display()
 	apply_code_button.disabled = true
+	apply_diff_button.disabled = true
+
+
+func _on_diff_mode_toggled(toggled: bool) -> void:
+	diff_mode_enabled = toggled
+	if toggled:
+		_add_system_message("Diff mode enabled. AI will provide changes in unified diff format.")
+	else:
+		_add_system_message("Diff mode disabled. AI will provide complete code blocks.")
 
 
 func _on_read_code_pressed() -> void:
@@ -169,13 +222,51 @@ func _on_read_code_pressed() -> void:
 	
 	var script = plugin.get_current_script()
 	var script_name := "Unknown"
+	var script_path := ""
 	if script:
 		script_name = script.resource_path.get_file()
+		script_path = script.resource_path
+	
+	# Store the current script path for diff application
+	current_script_path = script_path
 	
 	# Add code to context
 	var code_message := "Current script (%s):\n```gdscript\n%s\n```" % [script_name, code]
 	_add_user_message(code_message)
 	_add_system_message("Code from '%s' has been added to the conversation context." % script_name)
+	
+	# Auto-read associated scene if exists
+	if not script_path.is_empty():
+		var scene_path := plugin.find_scene_for_script(script_path)
+		if not scene_path.is_empty():
+			_add_system_message("Found associated scene: %s (use 'Read Scene' to add to context)" % scene_path.get_file())
+
+
+func _on_read_scene_pressed() -> void:
+	if not plugin:
+		return
+	
+	var script_path := plugin.get_current_script_path()
+	if script_path.is_empty():
+		_add_system_message("No script is currently open in the editor.")
+		return
+	
+	# Find the scene file that uses this script
+	var scene_path := plugin.find_scene_for_script(script_path)
+	
+	if scene_path.is_empty():
+		_add_system_message("No scene file found that references this script.")
+		return
+	
+	var scene_content := plugin.read_scene_content(scene_path)
+	if scene_content.is_empty():
+		_add_system_message("Failed to read scene file: %s" % scene_path)
+		return
+	
+	# Add scene to context
+	var scene_message := "Scene file (%s):\n```tscn\n%s\n```" % [scene_path.get_file(), scene_content]
+	_add_user_message(scene_message)
+	_add_system_message("Scene '%s' has been added to the conversation context." % scene_path.get_file())
 
 
 func _on_apply_code_pressed() -> void:
@@ -189,6 +280,30 @@ func _on_apply_code_pressed() -> void:
 	
 	plugin.set_current_code(code)
 	_add_system_message("Code has been applied to the current script.")
+
+
+func _on_apply_diff_pressed() -> void:
+	if not plugin or current_response.is_empty():
+		return
+	
+	var current_code := plugin.get_current_code()
+	if current_code.is_empty():
+		_add_system_message("No script is currently open in the editor.")
+		return
+	
+	# Check if response contains diff format
+	if not DiffUtils.contains_diff(current_response):
+		_add_system_message("No diff found in the last response. Try using 'Apply Code' instead.")
+		return
+	
+	# Apply the diff
+	var result := DiffUtils.apply_diff(current_code, current_response)
+	
+	if result["success"]:
+		plugin.set_current_code(result["code"])
+		_add_system_message("Diff has been applied to the current script.")
+	else:
+		_add_system_message("Failed to apply diff: %s" % result["error"])
 
 
 func _extract_code_from_response(response: String) -> String:
@@ -275,7 +390,7 @@ func _send_to_api() -> void:
 	stop_button.visible = true
 	
 	current_response = ""
-	llm_client.start_stream(base_url, api_key, model, messages)
+	llm_client.start_stream(base_url, api_key, model, messages, diff_mode_enabled)
 
 
 func _on_llm_chunk(chunk: String) -> void:
@@ -296,7 +411,11 @@ func _on_llm_finished(full_response: String) -> void:
 	if not full_response.is_empty():
 		current_response = full_response
 		messages.append({"role": "assistant", "content": full_response})
+		
+		# Update button states based on response content
 		apply_code_button.disabled = _extract_code_from_response(full_response).is_empty()
+		apply_diff_button.disabled = not DiffUtils.contains_diff(full_response)
+		
 		_update_chat_display()
 	else:
 		_add_system_message("Empty response from AI.")
