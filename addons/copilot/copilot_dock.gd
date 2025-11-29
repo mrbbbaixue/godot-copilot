@@ -1,6 +1,9 @@
 @tool
 extends VBoxContainer
 
+const LLMClient = preload("llm_client.gd")
+const MarkdownParser = preload("markdown_parser.gd")
+
 var plugin: EditorPlugin
 
 # UI elements
@@ -13,20 +16,12 @@ var apply_code_button: Button
 var read_code_button: Button
 var stop_button: Button
 
-# API client for non-streaming
-var http_request: HTTPRequest
-
-# Streaming support
-var stream_thread: Thread
-var stream_mutex: Mutex
-var is_streaming := false
-var should_stop_stream := false
-var stream_buffer := ""
-var current_response := ""
-var pending_stream_text := ""
+# API client
+var llm_client: LLMClient
 
 # Chat history
 var messages := []
+var current_response := ""
 
 
 func _init() -> void:
@@ -75,6 +70,12 @@ func _setup_ui() -> void:
 	apply_code_button.disabled = true
 	code_actions.add_child(apply_code_button)
 	
+	# Main content area with split container
+	var split_container := VSplitContainer.new()
+	split_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	split_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	add_child(split_container)
+	
 	# Chat display area
 	chat_display = RichTextLabel.new()
 	chat_display.bbcode_enabled = true
@@ -83,80 +84,66 @@ func _setup_ui() -> void:
 	chat_display.custom_minimum_size = Vector2(0, 200)
 	chat_display.selection_enabled = true
 	chat_display.scroll_following = true
-	add_child(chat_display)
+	split_container.add_child(chat_display)
 	
-	# Input area
-	var input_container := HBoxContainer.new()
+	# Input area container
+	var input_container := VBoxContainer.new()
 	input_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_child(input_container)
+	input_container.custom_minimum_size = Vector2(0, 100)
+	split_container.add_child(input_container)
 	
 	input_field = TextEdit.new()
 	input_field.placeholder_text = "Type your message..."
 	input_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	input_field.custom_minimum_size = Vector2(0, 60)
+	input_field.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	input_field.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	input_container.add_child(input_field)
 	
-	send_button = Button.new()
-	send_button.text = "Send"
-	send_button.pressed.connect(_on_send_pressed)
-	input_container.add_child(send_button)
+	var button_row := HBoxContainer.new()
+	button_row.alignment = BoxContainer.ALIGNMENT_END
+	input_container.add_child(button_row)
 	
 	stop_button = Button.new()
 	stop_button.text = "Stop"
 	stop_button.pressed.connect(_on_stop_pressed)
 	stop_button.visible = false
-	input_container.add_child(stop_button)
+	button_row.add_child(stop_button)
 	
-	# HTTP request for API calls
-	http_request = HTTPRequest.new()
-	http_request.request_completed.connect(_on_request_completed)
-	add_child(http_request)
+	send_button = Button.new()
+	send_button.text = "Send"
+	send_button.pressed.connect(_on_send_pressed)
+	# Style the send button
+	var style_box = StyleBoxFlat.new()
+	style_box.bg_color = Color(0.2, 0.6, 1.0) # Accent color (blue-ish)
+	style_box.corner_radius_top_left = 4
+	style_box.corner_radius_top_right = 4
+	style_box.corner_radius_bottom_right = 4
+	style_box.corner_radius_bottom_left = 4
+	send_button.add_theme_stylebox_override("normal", style_box)
+	button_row.add_child(send_button)
 	
-	# Initialize mutex for thread safety
-	stream_mutex = Mutex.new()
+	# Initialize LLM client
+	llm_client = LLMClient.new()
+	llm_client.chunk_received.connect(_on_llm_chunk)
+	llm_client.error_occurred.connect(_on_llm_error)
+	llm_client.request_finished.connect(_on_llm_finished)
 	
 	# Update display
 	_update_chat_display()
 
 
 func _process(_delta: float) -> void:
-	# Process pending stream text on the main thread
-	if not pending_stream_text.is_empty():
-		stream_mutex.lock()
-		var text_to_add := pending_stream_text
-		pending_stream_text = ""
-		stream_mutex.unlock()
-		
-		if not text_to_add.is_empty():
-			_append_to_current_response(text_to_add)
+	pass
 
 
 func _exit_tree() -> void:
-	# Stop streaming thread before cleanup
-	if is_streaming:
-		should_stop_stream = true
-		if stream_thread and stream_thread.is_started():
-			stream_thread.wait_to_finish()
-		is_streaming = false
+	if llm_client:
+		llm_client.stop_stream()
 
 
 func _on_stop_pressed() -> void:
-	_stop_streaming()
-
-
-func _stop_streaming() -> void:
-	if is_streaming:
-		should_stop_stream = true
-		if stream_thread and stream_thread.is_started():
-			stream_thread.wait_to_finish()
-		is_streaming = false
-		should_stop_stream = false
-		if send_button:
-			send_button.visible = true
-			send_button.disabled = false
-		if stop_button:
-			stop_button.visible = false
+	if llm_client:
+		llm_client.stop_stream()
 
 
 func _on_settings_pressed() -> void:
@@ -260,15 +247,14 @@ func _update_chat_display() -> void:
 		elif msg["role"] == "assistant":
 			chat_display.append_text("\n[color=green][b]AI:[/b][/color]\n")
 			chat_display.append_text(_format_message(msg["content"]) + "\n")
+	
+	if llm_client and llm_client.is_streaming() and not current_response.is_empty():
+		chat_display.append_text("\n[color=green][b]AI:[/b][/color]\n")
+		chat_display.append_text(_format_message(current_response) + "\n")
 
 
 func _format_message(content: String) -> String:
-	# Simple formatting for code blocks
-	var formatted := content
-	# Escape BBCode characters first
-	formatted = formatted.replace("[", "[lb]")
-	formatted = formatted.replace("]", "[rb]")
-	return formatted
+	return MarkdownParser.parse(content)
 
 
 func _send_to_api() -> void:
@@ -284,206 +270,26 @@ func _send_to_api() -> void:
 		_add_system_message("API key not configured. Please go to Settings.")
 		return
 	
-	# Start streaming response
-	_start_streaming_request(base_url, api_key, model)
-
-
-func _start_streaming_request(base_url: String, api_key: String, model: String) -> void:
-	if is_streaming:
-		return
-	
-	is_streaming = true
-	should_stop_stream = false
-	
 	# Setup UI for streaming
 	send_button.visible = false
 	stop_button.visible = true
 	
-	# Prepare message for streaming display
 	current_response = ""
+	llm_client.start_stream(base_url, api_key, model, messages)
+
+
+func _on_llm_chunk(chunk: String) -> void:
+	current_response += chunk
 	_update_chat_display()
-	chat_display.append_text("\n[color=green][b]AI:[/b][/color]\n")
-	
-	# Start stream in thread
-	var request_data := {
-		"base_url": base_url,
-		"api_key": api_key,
-		"model": model,
-		"messages": messages.duplicate(true)
-	}
-	
-	stream_thread = Thread.new()
-	stream_thread.start(_stream_request_thread.bind(request_data))
 
 
-func _stream_request_thread(request_data: Dictionary) -> void:
-	var base_url: String = request_data["base_url"]
-	var api_key: String = request_data["api_key"]
-	var model: String = request_data["model"]
-	var chat_messages: Array = request_data["messages"]
-	
-	# Parse URL
-	var url := base_url.trim_suffix("/") + "/chat/completions"
-	var url_parts := url.split("://")
-	var use_ssl := url_parts[0] == "https"
-	var host_path := url_parts[1] if url_parts.size() > 1 else url_parts[0]
-	var slash_pos := host_path.find("/")
-	var host := host_path.substr(0, slash_pos) if slash_pos > 0 else host_path
-	var path := host_path.substr(slash_pos) if slash_pos > 0 else "/chat/completions"
-	
-	# Handle port
-	var port := 443 if use_ssl else 80
-	var colon_pos := host.find(":")
-	if colon_pos > 0:
-		port = int(host.substr(colon_pos + 1))
-		host = host.substr(0, colon_pos)
-	
-	# Create HTTP client
-	var http := HTTPClient.new()
-	var err: int
-	if use_ssl:
-		err = http.connect_to_host(host, port, TLSOptions.client())
-	else:
-		err = http.connect_to_host(host, port)
-	if err != OK:
-		call_deferred("_on_stream_error", "Failed to connect to host")
-		return
-	
-	# Wait for connection
-	while http.get_status() == HTTPClient.STATUS_CONNECTING or http.get_status() == HTTPClient.STATUS_RESOLVING:
-		if should_stop_stream:
-			http.close()
-			call_deferred("_on_stream_finished")
-			return
-		http.poll()
-		OS.delay_msec(50)
-	
-	if http.get_status() != HTTPClient.STATUS_CONNECTED:
-		call_deferred("_on_stream_error", "Connection failed: " + str(http.get_status()))
-		return
-	
-	# Prepare request
-	var system_message := {
-		"role": "system",
-		"content": "You are an AI assistant helping with Godot game development. When providing code, always wrap it in ```gdscript code blocks. Be concise and helpful."
-	}
-	
-	var request_messages := [system_message]
-	for msg in chat_messages:
-		request_messages.append({"role": msg["role"], "content": msg["content"]})
-	
-	var body := {
-		"model": model,
-		"messages": request_messages,
-		"stream": true
-	}
-	
-	var headers := PackedStringArray([
-		"Host: " + host,
-		"Content-Type: application/json",
-		"Authorization: Bearer " + api_key,
-		"Accept: text/event-stream"
-	])
-	
-	err = http.request(HTTPClient.METHOD_POST, path, headers, JSON.stringify(body))
-	if err != OK:
-		call_deferred("_on_stream_error", "Request failed")
-		return
-	
-	# Wait for response headers
-	while http.get_status() == HTTPClient.STATUS_REQUESTING:
-		if should_stop_stream:
-			http.close()
-			call_deferred("_on_stream_finished")
-			return
-		http.poll()
-		OS.delay_msec(50)
-	
-	if http.get_status() != HTTPClient.STATUS_BODY and http.get_status() != HTTPClient.STATUS_CONNECTED:
-		call_deferred("_on_stream_error", "Request error: " + str(http.get_status()))
-		return
-	
-	if http.get_response_code() != 200:
-		var response_body := PackedByteArray()
-		while http.get_status() == HTTPClient.STATUS_BODY:
-			http.poll()
-			var chunk := http.read_response_body_chunk()
-			if chunk.size() > 0:
-				response_body.append_array(chunk)
-			OS.delay_msec(10)
-		call_deferred("_on_stream_error", "API error (%d): %s" % [http.get_response_code(), response_body.get_string_from_utf8()])
-		return
-	
-	# Read streaming response
-	var buffer := ""
-	var full_response := ""
-	
-	while http.get_status() == HTTPClient.STATUS_BODY:
-		if should_stop_stream:
-			http.close()
-			break
-		
-		http.poll()
-		var chunk := http.read_response_body_chunk()
-		
-		if chunk.size() > 0:
-			buffer += chunk.get_string_from_utf8()
-			
-			# Process complete SSE events
-			while "\n" in buffer:
-				var newline_pos := buffer.find("\n")
-				var line := buffer.substr(0, newline_pos).strip_edges()
-				buffer = buffer.substr(newline_pos + 1)
-				
-				if line.begins_with("data: "):
-					var data := line.substr(6)
-					if data == "[DONE]":
-						continue
-					
-					var json := JSON.new()
-					if json.parse(data) == OK:
-						var response = json.data
-						if response is Dictionary and response.has("choices"):
-							var choices: Array = response["choices"]
-							if choices.size() > 0:
-								var delta: Dictionary = choices[0].get("delta", {})
-								var content: String = delta.get("content", "")
-								if not content.is_empty():
-									full_response += content
-									# Queue text update for main thread
-									stream_mutex.lock()
-									pending_stream_text += content
-									stream_mutex.unlock()
-		
-		OS.delay_msec(10)
-	
-	http.close()
-	call_deferred("_on_stream_complete", full_response)
-
-
-func _append_to_current_response(text: String) -> void:
-	current_response += text
-	chat_display.append_text(_format_message(text))
-
-
-func _on_stream_error(error_msg: String) -> void:
-	is_streaming = false
+func _on_llm_error(message: String) -> void:
 	send_button.visible = true
 	stop_button.visible = false
-	_add_system_message(error_msg)
+	_add_system_message(message)
 
 
-func _on_stream_finished() -> void:
-	is_streaming = false
-	send_button.visible = true
-	stop_button.visible = false
-	if not current_response.is_empty():
-		messages.append({"role": "assistant", "content": current_response})
-		apply_code_button.disabled = _extract_code_from_response(current_response).is_empty()
-
-
-func _on_stream_complete(full_response: String) -> void:
-	is_streaming = false
+func _on_llm_finished(full_response: String) -> void:
 	send_button.visible = true
 	stop_button.visible = false
 	
@@ -491,38 +297,6 @@ func _on_stream_complete(full_response: String) -> void:
 		current_response = full_response
 		messages.append({"role": "assistant", "content": full_response})
 		apply_code_button.disabled = _extract_code_from_response(full_response).is_empty()
+		_update_chat_display()
 	else:
 		_add_system_message("Empty response from AI.")
-
-
-func _on_request_completed(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray) -> void:
-	send_button.disabled = false
-	send_button.text = "Send"
-	
-	if result != HTTPRequest.RESULT_SUCCESS:
-		_add_system_message("Request failed with result: " + str(result))
-		return
-	
-	if response_code != 200:
-		var error_text := body.get_string_from_utf8()
-		_add_system_message("API error (%d): %s" % [response_code, error_text])
-		return
-	
-	var json := JSON.new()
-	var parse_result := json.parse(body.get_string_from_utf8())
-	if parse_result != OK:
-		_add_system_message("Failed to parse response.")
-		return
-	
-	var response_data = json.data
-	if response_data is Dictionary and response_data.has("choices"):
-		var choices: Array = response_data["choices"]
-		if choices.size() > 0:
-			var message: Dictionary = choices[0].get("message", {})
-			var content: String = message.get("content", "")
-			if not content.is_empty():
-				_add_assistant_message(content)
-			else:
-				_add_system_message("Empty response from AI.")
-	else:
-		_add_system_message("Unexpected response format.")
