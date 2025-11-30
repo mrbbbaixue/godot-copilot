@@ -44,11 +44,11 @@ static func parse(text: String) -> String:
 		
 		# Process code block based on language
 		if language == "diff":
-			parts.append(_format_diff_block(code_content))
+			parts.append(format_diff_block(code_content))
 		elif language == "gdscript" or language == "gd":
-			parts.append(_format_gdscript_block(code_content))
+			parts.append(format_gdscript_block(code_content))
 		else:
-			parts.append(_format_code_block(code_content, language))
+			parts.append(format_code_block(code_content, language))
 		
 		current_pos = end
 	
@@ -96,7 +96,7 @@ static func _process_markdown(text: String) -> String:
 	return result
 
 
-static func _format_code_block(code: String, language: String = "") -> String:
+static func format_code_block(code: String, language: String = "") -> String:
 	var escaped = code.replace("[", "[lb]").replace("]", "[rb]")
 	var lang_label = ""
 	if not language.is_empty():
@@ -104,7 +104,7 @@ static func _format_code_block(code: String, language: String = "") -> String:
 	return "\n[bgcolor=#1e1e2e]" + lang_label + "[code]" + escaped + "[/code][/bgcolor]\n"
 
 
-static func _format_gdscript_block(code: String) -> String:
+static func format_gdscript_block(code: String) -> String:
 	var lines = code.split("\n")
 	var result_lines = []
 	
@@ -165,7 +165,7 @@ static func _highlight_gdscript_line(line: String) -> String:
 	return result
 
 
-static func _format_diff_block(diff_text: String) -> String:
+static func format_diff_block(diff_text: String) -> String:
 	var lines = diff_text.split("\n")
 	var result_lines = []
 	

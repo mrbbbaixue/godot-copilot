@@ -4,6 +4,10 @@ extends EditorPlugin
 const CopilotDock = preload("res://addons/copilot/copilot_dock.gd")
 const SettingsDialog = preload("res://addons/copilot/settings_dialog.gd")
 
+# File tree configuration
+const EXCLUDED_FOLDERS := ["addons", ".godot"]
+const INCLUDED_EXTENSIONS := [".gd", ".tscn", ".tres", ".gdshader"]
+
 var dock: Control
 var settings_dialog: AcceptDialog
 
@@ -225,13 +229,13 @@ func _build_file_tree(dir_path: String, depth: int, max_depth: int) -> String:
 		var full_path := dir_path.path_join(file_name)
 		
 		if dir.current_is_dir():
-			# Skip addons folder to avoid clutter
-			if file_name != "addons" and file_name != ".godot":
+			# Skip excluded folders to avoid clutter
+			if not file_name in EXCLUDED_FOLDERS:
 				folders.append(file_name)
 		else:
-			# Include common game files
-			if file_name.ends_with(".gd") or file_name.ends_with(".tscn") or \
-			   file_name.ends_with(".tres") or file_name.ends_with(".gdshader"):
+			# Include files with allowed extensions
+			var extension := "." + file_name.get_extension()
+			if extension in INCLUDED_EXTENSIONS:
 				files.append(file_name)
 		
 		file_name = dir.get_next()

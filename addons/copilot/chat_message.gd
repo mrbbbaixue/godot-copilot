@@ -242,13 +242,13 @@ func _add_code_segment(code: String, language: String, file_path: String, is_dif
 	# Format code based on type
 	var formatted_code := ""
 	if is_diff:
-		formatted_code = MarkdownParser._format_diff_block(code)
+		formatted_code = MarkdownParser.format_diff_block(code)
 	elif language == "gdscript" or language == "gd":
-		formatted_code = MarkdownParser._format_gdscript_block(code)
+		formatted_code = MarkdownParser.format_gdscript_block(code)
 	elif language == "tscn":
-		formatted_code = MarkdownParser._format_code_block(code, "tscn")
+		formatted_code = MarkdownParser.format_code_block(code, "tscn")
 	else:
-		formatted_code = MarkdownParser._format_code_block(code, language)
+		formatted_code = MarkdownParser.format_code_block(code, language)
 	
 	code_label.append_text(formatted_code)
 	code_container.add_child(code_label)
