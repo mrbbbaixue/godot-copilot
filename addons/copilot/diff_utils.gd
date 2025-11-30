@@ -77,7 +77,7 @@ static func apply_diff(original_code: String, diff_text: String) -> Dictionary:
 	if actual_diff.is_empty():
 		actual_diff = diff_text
 	
-	var original_lines := original_code.split("\n", false)
+	var original_lines := original_code.split("\n")
 	var result_lines := original_lines.duplicate()
 	var lines := actual_diff.split("\n")
 	var offset := 0  # Track line offset due to insertions/deletions
@@ -109,8 +109,8 @@ static func apply_diff(original_code: String, diff_text: String) -> Dictionary:
 					delete_lines.append(content_line.substr(1))
 				elif content_line.begins_with("+"):
 					insert_lines.append(content_line.substr(1))
-				elif content_line.begins_with(" "):
-					# Context line with changes accumulated - apply them
+				elif content_line.begins_with(" ") or content_line.is_empty():
+					# Context line (or empty context line) with changes accumulated - apply them
 					if delete_lines.size() > 0 or insert_lines.size() > 0:
 						var apply_result := _apply_single_change(result_lines, old_start, delete_lines, insert_lines)
 						if not apply_result["success"]:
@@ -121,9 +121,6 @@ static func apply_diff(original_code: String, diff_text: String) -> Dictionary:
 						insert_lines = []
 					else:
 						old_start += 1
-				elif content_line.is_empty() and i == lines.size() - 1:
-					# End of diff
-					break
 				
 				i += 1
 			
