@@ -162,65 +162,155 @@ static func contains_diff(text: String) -> bool:
 	return text.contains("@@") and (text.contains("\n-") or text.contains("\n+"))
 
 
-## Generate a simple diff between two texts
+## Generate a unified diff between two texts using LCS-based algorithm
 static func generate_diff(old_text: String, new_text: String) -> String:
 	var old_lines := old_text.split("\n")
 	var new_lines := new_text.split("\n")
 	
+	# Use simple diff algorithm to find changes
+	var diff_ops := _compute_diff_operations(old_lines, new_lines)
+	
+	if diff_ops.is_empty():
+		return ""  # No changes
+	
 	var diff := "--- original\n+++ modified\n"
 	
-	# Simple line-by-line diff (not optimal but sufficient for display)
-	var i := 0
-	var j := 0
-	var hunks := []
-	var current_hunk := {"old_start": 1, "old_lines": [], "new_lines": [], "context_before": [], "context_after": []}
+	# Group operations into hunks
+	var hunks := _group_into_hunks(diff_ops, old_lines, new_lines)
 	
-	while i < old_lines.size() or j < new_lines.size():
-		if i < old_lines.size() and j < new_lines.size() and old_lines[i] == new_lines[j]:
-			# Lines match - context
-			if current_hunk["old_lines"].size() > 0 or current_hunk["new_lines"].size() > 0:
-				current_hunk["context_after"].append(old_lines[i])
-				if current_hunk["context_after"].size() >= 3:
-					hunks.append(current_hunk)
-					current_hunk = {"old_start": i + 2, "old_lines": [], "new_lines": [], "context_before": [], "context_after": []}
-			else:
-				current_hunk["context_before"].append(old_lines[i])
-				if current_hunk["context_before"].size() > 3:
-					current_hunk["context_before"].pop_front()
-				current_hunk["old_start"] = i + 1 - current_hunk["context_before"].size() + 1
-			i += 1
-			j += 1
-		elif i < old_lines.size() and (j >= new_lines.size() or _find_line(old_lines[i], new_lines, j) == -1):
-			# Line removed
-			current_hunk["old_lines"].append(old_lines[i])
-			current_hunk["context_after"].clear()
-			i += 1
-		elif j < new_lines.size():
-			# Line added
-			current_hunk["new_lines"].append(new_lines[j])
-			current_hunk["context_after"].clear()
-			j += 1
-	
-	# Add final hunk
-	if current_hunk["old_lines"].size() > 0 or current_hunk["new_lines"].size() > 0:
-		hunks.append(current_hunk)
-	
-	# Format hunks
+	# Format each hunk
 	for hunk in hunks:
-		var old_count = hunk["context_before"].size() + hunk["old_lines"].size() + hunk["context_after"].size()
-		var new_count = hunk["context_before"].size() + hunk["new_lines"].size() + hunk["context_after"].size()
-		diff += "@@ -%d,%d +%d,%d @@\n" % [hunk["old_start"], old_count, hunk["old_start"], new_count]
+		var old_start: int = hunk["old_start"]
+		var old_count: int = hunk["old_count"]
+		var new_start: int = hunk["new_start"]
+		var new_count: int = hunk["new_count"]
+		var operations: Array = hunk["operations"]
 		
-		for line in hunk["context_before"]:
-			diff += " " + line + "\n"
-		for line in hunk["old_lines"]:
-			diff += "-" + line + "\n"
-		for line in hunk["new_lines"]:
-			diff += "+" + line + "\n"
-		for line in hunk["context_after"]:
-			diff += " " + line + "\n"
+		diff += "@@ -%d,%d +%d,%d @@\n" % [old_start, old_count, new_start, new_count]
+		
+		for op in operations:
+			if op["type"] == "context":
+				diff += " " + op["line"] + "\n"
+			elif op["type"] == "delete":
+				diff += "-" + op["line"] + "\n"
+			elif op["type"] == "add":
+				diff += "+" + op["line"] + "\n"
 	
 	return diff
+
+
+## Compute diff operations using a simple algorithm
+static func _compute_diff_operations(old_lines: Array, new_lines: Array) -> Array:
+	var operations := []
+	var old_idx := 0
+	var new_idx := 0
+	
+	while old_idx < old_lines.size() or new_idx < new_lines.size():
+		if old_idx < old_lines.size() and new_idx < new_lines.size():
+			if old_lines[old_idx] == new_lines[new_idx]:
+				# Lines are equal - context
+				operations.append({"type": "equal", "old_idx": old_idx, "new_idx": new_idx, "line": old_lines[old_idx]})
+				old_idx += 1
+				new_idx += 1
+			else:
+				# Lines differ - find best match
+				var old_match := _find_line(new_lines[new_idx], old_lines, old_idx + 1)
+				var new_match := _find_line(old_lines[old_idx], new_lines, new_idx + 1)
+				
+				if old_match != -1 and (new_match == -1 or old_match - old_idx <= new_match - new_idx):
+					# Delete old lines until we reach the match
+					while old_idx < old_match:
+						operations.append({"type": "delete", "old_idx": old_idx, "line": old_lines[old_idx]})
+						old_idx += 1
+				elif new_match != -1:
+					# Add new lines until we reach the match
+					while new_idx < new_match:
+						operations.append({"type": "add", "new_idx": new_idx, "line": new_lines[new_idx]})
+						new_idx += 1
+				else:
+					# No match found - replace
+					operations.append({"type": "delete", "old_idx": old_idx, "line": old_lines[old_idx]})
+					operations.append({"type": "add", "new_idx": new_idx, "line": new_lines[new_idx]})
+					old_idx += 1
+					new_idx += 1
+		elif old_idx < old_lines.size():
+			# Only old lines remaining - delete
+			operations.append({"type": "delete", "old_idx": old_idx, "line": old_lines[old_idx]})
+			old_idx += 1
+		else:
+			# Only new lines remaining - add
+			operations.append({"type": "add", "new_idx": new_idx, "line": new_lines[new_idx]})
+			new_idx += 1
+	
+	return operations
+
+
+## Group diff operations into hunks with context
+static func _group_into_hunks(operations: Array, old_lines: Array, new_lines: Array) -> Array:
+	var hunks := []
+	var context_lines := 3
+	
+	var current_hunk := null
+	var old_line := 0
+	var new_line := 0
+	var pending_context := []
+	
+	for op in operations:
+		if op["type"] == "equal":
+			if current_hunk != null:
+				# Add context after changes
+				current_hunk["operations"].append({"type": "context", "line": op["line"]})
+				current_hunk["old_count"] += 1
+				current_hunk["new_count"] += 1
+				pending_context.append(op)
+				
+				# Check if we have enough trailing context to close the hunk
+				if pending_context.size() >= context_lines:
+					hunks.append(current_hunk)
+					current_hunk = null
+					pending_context.clear()
+			else:
+				# Accumulate context before changes
+				pending_context.append(op)
+				if pending_context.size() > context_lines:
+					pending_context.pop_front()
+			old_line += 1
+			new_line += 1
+		else:
+			# We have a change
+			if current_hunk == null:
+				# Start a new hunk with leading context
+				var context_start := pending_context.size()
+				current_hunk = {
+					"old_start": old_line - context_start + 1,
+					"new_start": new_line - context_start + 1,
+					"old_count": context_start,
+					"new_count": context_start,
+					"operations": []
+				}
+				# Add leading context
+				for ctx in pending_context:
+					current_hunk["operations"].append({"type": "context", "line": ctx["line"]})
+				pending_context.clear()
+			else:
+				# Continue current hunk, clear pending context (it's now part of the hunk)
+				pending_context.clear()
+			
+			# Add the operation
+			current_hunk["operations"].append({"type": op["type"], "line": op["line"]})
+			
+			if op["type"] == "delete":
+				current_hunk["old_count"] += 1
+				old_line += 1
+			elif op["type"] == "add":
+				current_hunk["new_count"] += 1
+				new_line += 1
+	
+	# Don't forget the last hunk
+	if current_hunk != null:
+		hunks.append(current_hunk)
+	
+	return hunks
 
 
 static func _find_line(line: String, lines: Array, start: int) -> int:

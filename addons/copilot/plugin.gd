@@ -273,8 +273,11 @@ func apply_code_to_file(file_path: String, code: String) -> Dictionary:
 	if not file_path.begins_with("res://"):
 		return {"success": false, "error": "Invalid file path: must start with res://"}
 	
+	var is_new_file := not FileAccess.file_exists(file_path)
+	var is_scene_file := file_path.ends_with(".tscn") or file_path.ends_with(".scn")
+	
 	# Check if file exists
-	if not FileAccess.file_exists(file_path):
+	if is_new_file:
 		# Create new file
 		var file := FileAccess.open(file_path, FileAccess.WRITE)
 		if not file:
@@ -302,7 +305,24 @@ func apply_code_to_file(file_path: String, code: String) -> Dictionary:
 	
 	# Refresh filesystem
 	get_editor_interface().get_resource_filesystem().scan()
+	
+	# Reload scene if this is a scene file
+	if is_scene_file:
+		_reload_scene_if_open(file_path)
+	
 	return {"success": true, "error": "", "created": false}
+
+
+## Reload the scene in the editor if it's currently open
+func _reload_scene_if_open(scene_path: String) -> void:
+	var current_scene_path := get_current_scene_path()
+	if current_scene_path == scene_path:
+		# The modified scene is currently open, reload it
+		# We need to reopen the scene to reflect changes
+		get_editor_interface().reload_scene_from_path(scene_path)
+	else:
+		# Just trigger a reimport for scenes not currently edited
+		get_editor_interface().get_resource_filesystem().reimport_files([scene_path])
 
 
 ## Apply diff to a specific file by path
