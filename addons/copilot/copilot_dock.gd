@@ -18,7 +18,6 @@ var apply_diff_button: Button
 var read_code_button: Button
 var read_scene_button: Button
 var stop_button: Button
-var diff_mode_checkbox: CheckBox
 
 # API client
 var llm_client: LLMClient
@@ -26,9 +25,6 @@ var llm_client: LLMClient
 # Chat history
 var messages := []
 var current_response := ""
-
-# Mode settings
-var diff_mode_enabled := false
 
 # Context tracking
 var current_script_path := ""
@@ -61,17 +57,6 @@ func _setup_ui() -> void:
 	clear_button.tooltip_text = "Clear chat"
 	clear_button.pressed.connect(_on_clear_pressed)
 	header.add_child(clear_button)
-	
-	# Mode options row
-	var mode_row := HBoxContainer.new()
-	mode_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_child(mode_row)
-	
-	diff_mode_checkbox = CheckBox.new()
-	diff_mode_checkbox.text = "Diff Mode"
-	diff_mode_checkbox.tooltip_text = "Use diff format for code changes (saves output time)"
-	diff_mode_checkbox.toggled.connect(_on_diff_mode_toggled)
-	mode_row.add_child(diff_mode_checkbox)
 	
 	# Code action buttons - first row
 	var code_actions := HBoxContainer.new()
@@ -201,14 +186,6 @@ func _on_clear_pressed() -> void:
 	_update_chat_display()
 	apply_code_button.disabled = true
 	apply_diff_button.disabled = true
-
-
-func _on_diff_mode_toggled(toggled: bool) -> void:
-	diff_mode_enabled = toggled
-	if toggled:
-		_add_system_message("Diff mode enabled. AI will provide changes in unified diff format.")
-	else:
-		_add_system_message("Diff mode disabled. AI will provide complete code blocks.")
 
 
 func _on_read_code_pressed() -> void:
@@ -380,6 +357,7 @@ func _send_to_api() -> void:
 	var base_url: String = plugin.get_setting("api", "base_url")
 	var api_key: String = plugin.get_setting("api", "api_key")
 	var model: String = plugin.get_setting("api", "model")
+	var use_full_code_mode: bool = plugin.get_setting("mode", "full_code_mode")
 	
 	if api_key.is_empty():
 		_add_system_message("API key not configured. Please go to Settings.")
@@ -390,7 +368,7 @@ func _send_to_api() -> void:
 	stop_button.visible = true
 	
 	current_response = ""
-	llm_client.start_stream(base_url, api_key, model, messages, diff_mode_enabled)
+	llm_client.start_stream(base_url, api_key, model, messages, use_full_code_mode)
 
 
 func _on_llm_chunk(chunk: String) -> void:

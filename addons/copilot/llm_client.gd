@@ -1,6 +1,8 @@
 @tool
 extends RefCounted
 
+const SystemPrompts = preload("system_prompts.gd")
+
 signal chunk_received(chunk: String)
 signal error_occurred(message: String)
 signal request_finished(full_response: String)
@@ -13,7 +15,7 @@ var _is_streaming := false
 func _init() -> void:
 	_mutex = Mutex.new()
 
-func start_stream(base_url: String, api_key: String, model: String, messages: Array, use_diff_mode: bool = false) -> void:
+func start_stream(base_url: String, api_key: String, model: String, messages: Array, use_full_code_mode: bool = false) -> void:
 	if _is_streaming:
 		return
 	
@@ -25,7 +27,7 @@ func start_stream(base_url: String, api_key: String, model: String, messages: Ar
 		"api_key": api_key,
 		"model": model,
 		"messages": messages.duplicate(true),
-		"use_diff_mode": use_diff_mode
+		"use_full_code_mode": use_full_code_mode
 	}
 	
 	_thread = Thread.new()
@@ -46,7 +48,7 @@ func _stream_request_thread(request_data: Dictionary) -> void:
 	var api_key: String = request_data["api_key"]
 	var model: String = request_data["model"]
 	var chat_messages: Array = request_data["messages"]
-	var use_diff_mode: bool = request_data.get("use_diff_mode", false)
+	var use_full_code_mode: bool = request_data.get("use_full_code_mode", false)
 	
 	# Parse URL
 	var url := base_url.trim_suffix("/") + "/chat/completions"
@@ -88,27 +90,8 @@ func _stream_request_thread(request_data: Dictionary) -> void:
 		call_deferred("_emit_error", "Connection failed: " + str(http.get_status()))
 		return
 	
-	# Prepare request
-	var system_content: String
-	if use_diff_mode:
-		system_content = """You are an AI assistant helping with Godot game development. 
-When providing code modifications, use unified diff format to show changes. Format your diffs like this:
-
-```diff
---- original
-+++ modified
-@@ -line_number,count +line_number,count @@
- context line (unchanged)
--removed line
-+added line
- context line (unchanged)
-```
-
-Only show the lines that change, with 2-3 lines of context around each change. This saves output time and makes changes clearer.
-For new files or complete rewrites, you may still use ```gdscript code blocks.
-Be concise and helpful."""
-	else:
-		system_content = "You are an AI assistant helping with Godot game development. When providing code, always wrap it in ```gdscript code blocks. Be concise and helpful."
+	# Prepare request - use system prompts from separate file
+	var system_content := SystemPrompts.get_system_prompt(use_full_code_mode)
 	
 	var system_message := {
 		"role": "system",
