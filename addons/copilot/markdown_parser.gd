@@ -131,28 +131,26 @@ static func _highlight_gdscript_line(line: String) -> String:
 	string_regex.compile("(\"[^\"]*\"|'[^']*')")
 	result = string_regex.sub(result, "[color=" + COLOR_STRING + "]$1[/color]", true)
 	
-	# Keywords
+	# Keywords - use a single regex for all keywords
 	var keywords = ["func", "var", "const", "class", "extends", "if", "elif", "else", 
 					"for", "while", "match", "return", "pass", "break", "continue",
-					"class_name", "signal", "enum", "static", "onready", "export",
+					"class_name", "signal", "enum", "static",
 					"preload", "load", "self", "super", "true", "false", "null",
 					"and", "or", "not", "in", "is", "as", "await", "@tool", "@export",
 					"@onready"]
+	var kw_pattern = "\\b(" + "|".join(keywords) + ")\\b"
+	var kw_regex = RegEx.new()
+	kw_regex.compile(kw_pattern)
+	result = kw_regex.sub(result, "[color=" + COLOR_KEYWORD + "]$1[/color]", true)
 	
-	for keyword in keywords:
-		var kw_regex = RegEx.new()
-		kw_regex.compile("\\b(" + keyword + ")\\b")
-		result = kw_regex.sub(result, "[color=" + COLOR_KEYWORD + "]$1[/color]", true)
-	
-	# Types
+	# Types - use a single regex for all types
 	var types = ["int", "float", "bool", "String", "Vector2", "Vector3", "Array",
 				 "Dictionary", "Node", "Node2D", "Node3D", "Control", "Sprite2D",
 				 "void", "Variant"]
-	
-	for type_name in types:
-		var type_regex = RegEx.new()
-		type_regex.compile("\\b(" + type_name + ")\\b")
-		result = type_regex.sub(result, "[color=" + COLOR_TYPE + "]$1[/color]", true)
+	var type_pattern = "\\b(" + "|".join(types) + ")\\b"
+	var type_regex = RegEx.new()
+	type_regex.compile(type_pattern)
+	result = type_regex.sub(result, "[color=" + COLOR_TYPE + "]$1[/color]", true)
 	
 	# Numbers
 	var num_regex = RegEx.new()
