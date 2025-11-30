@@ -5,5 +5,4 @@
 [node name="Main" type="Node2D"]
 script = ExtResource("1_ig7tw")
 block_size = Vector2(60, 60)
-spacing = 20
-grid_size = Vector2(8, 8)
+block_count = 16
