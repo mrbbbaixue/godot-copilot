@@ -115,7 +115,7 @@ static func apply_diff(original_code: String, diff_text: String) -> Dictionary:
 				i += 1
 			
 			# Apply the hunk operations
-			var current_line := hunk["old_start"] - 1 + total_offset  # 0-indexed with offset
+			var current_line = hunk["old_start"] - 1 + total_offset  # 0-indexed with offset
 			var hunk_offset := 0
 			
 			for op in hunk_operations:
