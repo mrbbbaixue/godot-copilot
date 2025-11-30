@@ -7,6 +7,7 @@ var plugin: EditorPlugin
 var base_url_input: LineEdit
 var api_key_input: LineEdit
 var model_input: LineEdit
+var full_code_mode_checkbox: CheckBox
 
 
 func _init() -> void:
@@ -55,6 +56,14 @@ func _setup_ui() -> void:
 	
 	container.add_child(_create_spacer())
 	
+	# Full Code Mode Checkbox (Traditional mode - not diff)
+	full_code_mode_checkbox = CheckBox.new()
+	full_code_mode_checkbox.text = "Traditional Full Text Mode"
+	full_code_mode_checkbox.tooltip_text = "When enabled, AI outputs complete code blocks instead of diff format (uses more tokens)"
+	container.add_child(full_code_mode_checkbox)
+	
+	container.add_child(_create_spacer())
+	
 	# Help text
 	var help_label := Label.new()
 	help_label.text = "You can use any OpenAI-compatible API endpoint."
@@ -77,6 +86,7 @@ func _on_about_to_popup() -> void:
 		base_url_input.text = plugin.get_setting("api", "base_url")
 		api_key_input.text = plugin.get_setting("api", "api_key")
 		model_input.text = plugin.get_setting("api", "model")
+		full_code_mode_checkbox.button_pressed = plugin.get_setting("mode", "full_code_mode")
 
 
 func _on_confirmed() -> void:
@@ -84,3 +94,4 @@ func _on_confirmed() -> void:
 		plugin.set_setting("api", "base_url", base_url_input.text)
 		plugin.set_setting("api", "api_key", api_key_input.text)
 		plugin.set_setting("api", "model", model_input.text)
+		plugin.set_setting("mode", "full_code_mode", full_code_mode_checkbox.button_pressed)

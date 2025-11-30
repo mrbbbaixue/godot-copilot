@@ -1,6 +1,8 @@
 @tool
 extends RefCounted
 
+const SystemPrompts = preload("system_prompts.gd")
+
 signal chunk_received(chunk: String)
 signal error_occurred(message: String)
 signal request_finished(full_response: String)
@@ -13,7 +15,7 @@ var _is_streaming := false
 func _init() -> void:
 	_mutex = Mutex.new()
 
-func start_stream(base_url: String, api_key: String, model: String, messages: Array) -> void:
+func start_stream(base_url: String, api_key: String, model: String, messages: Array, use_full_code_mode: bool = false) -> void:
 	if _is_streaming:
 		return
 	
@@ -24,7 +26,8 @@ func start_stream(base_url: String, api_key: String, model: String, messages: Ar
 		"base_url": base_url,
 		"api_key": api_key,
 		"model": model,
-		"messages": messages.duplicate(true)
+		"messages": messages.duplicate(true),
+		"use_full_code_mode": use_full_code_mode
 	}
 	
 	_thread = Thread.new()
@@ -45,6 +48,7 @@ func _stream_request_thread(request_data: Dictionary) -> void:
 	var api_key: String = request_data["api_key"]
 	var model: String = request_data["model"]
 	var chat_messages: Array = request_data["messages"]
+	var use_full_code_mode: bool = request_data.get("use_full_code_mode", false)
 	
 	# Parse URL
 	var url := base_url.trim_suffix("/") + "/chat/completions"
@@ -86,10 +90,12 @@ func _stream_request_thread(request_data: Dictionary) -> void:
 		call_deferred("_emit_error", "Connection failed: " + str(http.get_status()))
 		return
 	
-	# Prepare request
+	# Prepare request - use system prompts from separate file
+	var system_content := SystemPrompts.get_system_prompt(use_full_code_mode)
+	
 	var system_message := {
 		"role": "system",
-		"content": "You are an AI assistant helping with Godot game development. When providing code, always wrap it in ```gdscript code blocks. Be concise and helpful."
+		"content": system_content
 	}
 	
 	var request_messages := [system_message]
