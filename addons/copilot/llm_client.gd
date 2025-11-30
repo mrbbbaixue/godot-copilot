@@ -15,7 +15,7 @@ var _is_streaming := false
 func _init() -> void:
 	_mutex = Mutex.new()
 
-func start_stream(base_url: String, api_key: String, model: String, messages: Array, use_full_code_mode: bool = false) -> void:
+func start_stream(base_url: String, api_key: String, model: String, messages: Array, use_full_code_mode: bool = false, context_prompt: String = "") -> void:
 	if _is_streaming:
 		return
 	
@@ -27,7 +27,8 @@ func start_stream(base_url: String, api_key: String, model: String, messages: Ar
 		"api_key": api_key,
 		"model": model,
 		"messages": messages.duplicate(true),
-		"use_full_code_mode": use_full_code_mode
+		"use_full_code_mode": use_full_code_mode,
+		"context_prompt": context_prompt
 	}
 	
 	_thread = Thread.new()
@@ -49,6 +50,7 @@ func _stream_request_thread(request_data: Dictionary) -> void:
 	var model: String = request_data["model"]
 	var chat_messages: Array = request_data["messages"]
 	var use_full_code_mode: bool = request_data.get("use_full_code_mode", false)
+	var context_prompt: String = request_data.get("context_prompt", "")
 	
 	# Parse URL
 	var url := base_url.trim_suffix("/") + "/chat/completions"
@@ -92,6 +94,10 @@ func _stream_request_thread(request_data: Dictionary) -> void:
 	
 	# Prepare request - use system prompts from separate file
 	var system_content := SystemPrompts.get_system_prompt(use_full_code_mode)
+	
+	# Append context prompt if provided
+	if not context_prompt.is_empty():
+		system_content += context_prompt
 	
 	var system_message := {
 		"role": "system",

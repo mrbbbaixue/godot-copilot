@@ -177,3 +177,152 @@ func _find_code_edit(node: Node) -> CodeEdit:
 		if result:
 			return result
 	return null
+
+
+## Get the currently open/edited scene path
+func get_current_scene_path() -> String:
+	var edited_scene := get_editor_interface().get_edited_scene_root()
+	if edited_scene and edited_scene.scene_file_path:
+		return edited_scene.scene_file_path
+	return ""
+
+
+## Get the content of the currently open scene
+func get_current_scene_content() -> String:
+	var scene_path := get_current_scene_path()
+	if scene_path.is_empty():
+		return ""
+	return _read_file_content(scene_path)
+
+
+## Get the project file tree structure
+func get_file_tree(root_path: String = "res://", max_depth: int = 3) -> String:
+	return _build_file_tree(root_path, 0, max_depth)
+
+
+func _build_file_tree(dir_path: String, depth: int, max_depth: int) -> String:
+	if depth >= max_depth:
+		return ""
+	
+	var result := ""
+	var indent := "  ".repeat(depth)
+	var dir := DirAccess.open(dir_path)
+	
+	if not dir:
+		return ""
+	
+	var folders := []
+	var files := []
+	
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	
+	while file_name != "":
+		if file_name.begins_with("."):
+			file_name = dir.get_next()
+			continue
+		
+		var full_path := dir_path.path_join(file_name)
+		
+		if dir.current_is_dir():
+			# Skip addons folder to avoid clutter
+			if file_name != "addons" and file_name != ".godot":
+				folders.append(file_name)
+		else:
+			# Include common game files
+			if file_name.ends_with(".gd") or file_name.ends_with(".tscn") or \
+			   file_name.ends_with(".tres") or file_name.ends_with(".gdshader"):
+				files.append(file_name)
+		
+		file_name = dir.get_next()
+	
+	dir.list_dir_end()
+	
+	# Sort for consistent output
+	folders.sort()
+	files.sort()
+	
+	# Add folders first
+	for folder in folders:
+		result += indent + "📁 " + folder + "/\n"
+		result += _build_file_tree(dir_path.path_join(folder), depth + 1, max_depth)
+	
+	# Then files
+	for file in files:
+		var icon := "📄"
+		if file.ends_with(".gd"):
+			icon = "📜"
+		elif file.ends_with(".tscn"):
+			icon = "🎬"
+		elif file.ends_with(".tres"):
+			icon = "📦"
+		elif file.ends_with(".gdshader"):
+			icon = "🎨"
+		result += indent + icon + " " + file + "\n"
+	
+	return result
+
+
+## Apply code to a specific file by path
+func apply_code_to_file(file_path: String, code: String) -> Dictionary:
+	# Validate path
+	if not file_path.begins_with("res://"):
+		return {"success": false, "error": "Invalid file path: must start with res://"}
+	
+	# Check if file exists
+	if not FileAccess.file_exists(file_path):
+		# Create new file
+		var file := FileAccess.open(file_path, FileAccess.WRITE)
+		if not file:
+			return {"success": false, "error": "Cannot create file: %s" % file_path}
+		file.store_string(code)
+		file.close()
+		# Refresh filesystem
+		get_editor_interface().get_resource_filesystem().scan()
+		return {"success": true, "error": "", "created": true}
+	
+	# Write to existing file
+	var file := FileAccess.open(file_path, FileAccess.WRITE)
+	if not file:
+		return {"success": false, "error": "Cannot write to file: %s" % file_path}
+	file.store_string(code)
+	file.close()
+	
+	# Refresh the script editor if this is the current script
+	if file_path == get_current_script_path():
+		var script_editor := get_current_script_editor()
+		if script_editor:
+			var code_edit := _find_code_edit(script_editor)
+			if code_edit:
+				code_edit.text = code
+	
+	# Refresh filesystem
+	get_editor_interface().get_resource_filesystem().scan()
+	return {"success": true, "error": "", "created": false}
+
+
+## Apply diff to a specific file by path
+func apply_diff_to_file(file_path: String, diff_text: String) -> Dictionary:
+	const DiffUtils = preload("diff_utils.gd")
+	
+	# Validate path
+	if not file_path.begins_with("res://"):
+		return {"success": false, "error": "Invalid file path: must start with res://"}
+	
+	# Check if file exists
+	if not FileAccess.file_exists(file_path):
+		return {"success": false, "error": "File does not exist: %s" % file_path}
+	
+	# Read current content
+	var current_code := _read_file_content(file_path)
+	if current_code.is_empty() and FileAccess.file_exists(file_path):
+		# File exists but might be empty, that's okay
+		pass
+	
+	# Apply diff
+	var result := DiffUtils.apply_diff(current_code, diff_text)
+	if not result["success"]:
+		return result
+	
+	# Write result
+	return apply_code_to_file(file_path, result["code"])

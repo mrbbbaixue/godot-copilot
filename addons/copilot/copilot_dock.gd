@@ -5,6 +5,7 @@ const LLMClient = preload("llm_client.gd")
 const MarkdownParser = preload("markdown_parser.gd")
 const DiffUtils = preload("diff_utils.gd")
 const ChatMessage = preload("chat_message.gd")
+const SystemPrompts = preload("system_prompts.gd")
 
 var plugin: EditorPlugin
 
@@ -15,10 +16,6 @@ var input_field: TextEdit
 var send_button: Button
 var settings_button: Button
 var clear_button: Button
-var apply_code_button: Button
-var apply_diff_button: Button
-var read_code_button: Button
-var read_scene_button: Button
 var stop_button: Button
 
 # API client
@@ -27,9 +24,6 @@ var llm_client: LLMClient
 # Chat history
 var messages := []
 var current_response := ""
-
-# Context tracking
-var current_script_path := ""
 
 # Streaming message widget
 var streaming_message: ChatMessage = null
@@ -62,46 +56,6 @@ func _setup_ui() -> void:
 	clear_button.tooltip_text = "Clear chat"
 	clear_button.pressed.connect(_on_clear_pressed)
 	header.add_child(clear_button)
-	
-	# Code action buttons - first row
-	var code_actions := HBoxContainer.new()
-	code_actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_child(code_actions)
-	
-	read_code_button = Button.new()
-	read_code_button.text = "📖 Read Code"
-	read_code_button.tooltip_text = "Read current script and add to context"
-	read_code_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	read_code_button.pressed.connect(_on_read_code_pressed)
-	code_actions.add_child(read_code_button)
-	
-	read_scene_button = Button.new()
-	read_scene_button.text = "🎬 Read Scene"
-	read_scene_button.tooltip_text = "Read the scene file (.tscn) that uses this script"
-	read_scene_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	read_scene_button.pressed.connect(_on_read_scene_pressed)
-	code_actions.add_child(read_scene_button)
-	
-	# Code action buttons - second row
-	var apply_actions := HBoxContainer.new()
-	apply_actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_child(apply_actions)
-	
-	apply_code_button = Button.new()
-	apply_code_button.text = "✏ Apply Code"
-	apply_code_button.tooltip_text = "Replace current script with AI-generated code"
-	apply_code_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	apply_code_button.pressed.connect(_on_apply_code_pressed)
-	apply_code_button.disabled = true
-	apply_actions.add_child(apply_code_button)
-	
-	apply_diff_button = Button.new()
-	apply_diff_button.text = "📝 Apply Diff"
-	apply_diff_button.tooltip_text = "Apply diff changes to current script"
-	apply_diff_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	apply_diff_button.pressed.connect(_on_apply_diff_pressed)
-	apply_diff_button.disabled = true
-	apply_actions.add_child(apply_diff_button)
 	
 	# Main content area with split container
 	var split_container := VSplitContainer.new()
@@ -199,10 +153,7 @@ func _on_settings_pressed() -> void:
 func _on_clear_pressed() -> void:
 	messages.clear()
 	current_response = ""
-	current_script_path = ""
 	_clear_chat_display()
-	apply_code_button.disabled = true
-	apply_diff_button.disabled = true
 
 
 func _clear_chat_display() -> void:
@@ -211,118 +162,6 @@ func _clear_chat_display() -> void:
 		if child is ChatMessage:
 			child.queue_free()
 	streaming_message = null
-
-
-func _on_read_code_pressed() -> void:
-	if not plugin:
-		return
-	
-	var code = plugin.get_current_code()
-	if code.is_empty():
-		_add_system_message("No script is currently open in the editor.")
-		return
-	
-	var script = plugin.get_current_script()
-	var script_name := "Unknown"
-	var script_path := ""
-	if script:
-		script_name = script.resource_path.get_file()
-		script_path = script.resource_path
-	
-	# Store the current script path for diff application
-	current_script_path = script_path
-	
-	# Add code to context
-	var code_message := "Current script (%s):\n```gdscript\n%s\n```" % [script_name, code]
-	_add_user_message(code_message)
-	_add_system_message("Code from '%s' has been added to the conversation context." % script_name)
-	
-	# Auto-read associated scene if exists
-	if not script_path.is_empty():
-		var scene_path = plugin.find_scene_for_script(script_path)
-		if not scene_path.is_empty():
-			_add_system_message("Found associated scene: %s (use 'Read Scene' to add to context)" % scene_path.get_file())
-
-
-func _on_read_scene_pressed() -> void:
-	if not plugin:
-		return
-	
-	var script_path = plugin.get_current_script_path()
-	if script_path.is_empty():
-		_add_system_message("No script is currently open in the editor.")
-		return
-	
-	# Find the scene file that uses this script
-	var scene_path = plugin.find_scene_for_script(script_path)
-	
-	if scene_path.is_empty():
-		_add_system_message("No scene file found that references this script.")
-		return
-	
-	var scene_content = plugin.read_scene_content(scene_path)
-	if scene_content.is_empty():
-		_add_system_message("Failed to read scene file: %s" % scene_path)
-		return
-	
-	# Add scene to context
-	var scene_message := "Scene file (%s):\n```tscn\n%s\n```" % [scene_path.get_file(), scene_content]
-	_add_user_message(scene_message)
-	_add_system_message("Scene '%s' has been added to the conversation context." % scene_path.get_file())
-
-
-func _on_apply_code_pressed() -> void:
-	if not plugin or current_response.is_empty():
-		return
-	
-	var code := _extract_code_from_response(current_response)
-	if code.is_empty():
-		_add_system_message("No code block found in the last response.")
-		return
-	
-	plugin.set_current_code(code)
-	_add_system_message("Code has been applied to the current script.")
-
-
-func _on_apply_diff_pressed() -> void:
-	if not plugin or current_response.is_empty():
-		return
-	
-	var current_code = plugin.get_current_code()
-	if current_code.is_empty():
-		_add_system_message("No script is currently open in the editor.")
-		return
-	
-	# Check if response contains diff format
-	if not DiffUtils.contains_diff(current_response):
-		_add_system_message("No diff found in the last response. Try using 'Apply Code' instead.")
-		return
-	
-	# Apply the diff
-	var result := DiffUtils.apply_diff(current_code, current_response)
-	
-	if result["success"]:
-		plugin.set_current_code(result["code"])
-		_add_system_message("Diff has been applied to the current script.")
-	else:
-		_add_system_message("Failed to apply diff: %s" % result["error"])
-
-
-func _extract_code_from_response(response: String) -> String:
-	# Look for code blocks in markdown format
-	var regex := RegEx.new()
-	regex.compile("```(?:gdscript|gd)?\\s*\\n([\\s\\S]*?)\\n```")
-	var result := regex.search(response)
-	if result:
-		return result.get_string(1)
-	
-	# Try without language specifier
-	regex.compile("```\\s*\\n([\\s\\S]*?)\\n```")
-	result = regex.search(response)
-	if result:
-		return result.get_string(1)
-	
-	return ""
 
 
 func _on_send_pressed() -> void:
@@ -345,7 +184,6 @@ func _add_assistant_message(content: String) -> void:
 	messages.append({"role": "assistant", "content": content})
 	current_response = content
 	_add_message_widget(ChatMessage.MessageRole.ASSISTANT, content)
-	apply_code_button.disabled = _extract_code_from_response(content).is_empty()
 
 
 func _add_system_message(content: String) -> void:
@@ -355,6 +193,11 @@ func _add_system_message(content: String) -> void:
 func _add_message_widget(role: ChatMessage.MessageRole, content: String) -> void:
 	var msg_widget := ChatMessage.new()
 	msg_widget.setup(role, content)
+	
+	# Connect apply signal for assistant messages
+	if role == ChatMessage.MessageRole.ASSISTANT:
+		msg_widget.apply_code_requested.connect(_on_apply_code_requested)
+	
 	chat_container.add_child(msg_widget)
 	_scroll_to_bottom()
 
@@ -364,6 +207,24 @@ func _scroll_to_bottom() -> void:
 	await get_tree().process_frame
 	if chat_scroll:
 		chat_scroll.scroll_vertical = int(chat_scroll.get_v_scroll_bar().max_value)
+
+
+func _get_context_prompt() -> String:
+	if not plugin:
+		return ""
+	
+	# Get current scene
+	var scene_path := plugin.get_current_scene_path()
+	var scene_content := plugin.get_current_scene_content()
+	
+	# Get current script
+	var script_path := plugin.get_current_script_path()
+	var script_content := plugin.get_current_code()
+	
+	# Get file tree
+	var file_tree := plugin.get_file_tree()
+	
+	return SystemPrompts.build_context_prompt(scene_path, scene_content, script_path, script_content, file_tree)
 
 
 func _send_to_api() -> void:
@@ -380,12 +241,15 @@ func _send_to_api() -> void:
 		_add_system_message("API key not configured. Please go to Settings.")
 		return
 	
+	# Get context prompt with current scene, script, and file tree
+	var context_prompt := _get_context_prompt()
+	
 	# Setup UI for streaming
 	send_button.visible = false
 	stop_button.visible = true
 	
 	current_response = ""
-	llm_client.start_stream(base_url, api_key, model, messages, use_full_code_mode)
+	llm_client.start_stream(base_url, api_key, model, messages, use_full_code_mode, context_prompt)
 
 
 func _on_llm_chunk(chunk: String) -> void:
@@ -395,6 +259,7 @@ func _on_llm_chunk(chunk: String) -> void:
 	if streaming_message == null:
 		streaming_message = ChatMessage.new()
 		streaming_message.setup(ChatMessage.MessageRole.ASSISTANT, current_response)
+		streaming_message.apply_code_requested.connect(_on_apply_code_requested)
 		chat_container.add_child(streaming_message)
 	else:
 		streaming_message.set_streaming_content(current_response)
@@ -419,11 +284,27 @@ func _on_llm_finished(full_response: String) -> void:
 		# Update the streaming message with final content
 		if streaming_message:
 			streaming_message.set_streaming_content(full_response)
-		
-		# Update button states based on response content
-		apply_code_button.disabled = _extract_code_from_response(full_response).is_empty()
-		apply_diff_button.disabled = not DiffUtils.contains_diff(full_response)
 	else:
 		_add_system_message("Empty response from AI.")
 	
 	streaming_message = null
+
+
+func _on_apply_code_requested(file_path: String, code: String, is_diff: bool) -> void:
+	if not plugin:
+		_add_system_message("Plugin not initialized.")
+		return
+	
+	var result: Dictionary
+	if is_diff:
+		result = plugin.apply_diff_to_file(file_path, code)
+	else:
+		result = plugin.apply_code_to_file(file_path, code)
+	
+	if result["success"]:
+		if result.get("created", false):
+			_add_system_message("✅ Created new file: %s" % file_path)
+		else:
+			_add_system_message("✅ Applied changes to: %s" % file_path)
+	else:
+		_add_system_message("❌ Failed to apply changes to %s: %s" % [file_path, result["error"]])

@@ -6,15 +6,16 @@ AI-assisted development plugin for the Godot Engine. Chat with AI models and app
 
 - 🤖 **AI Chat Panel**: Chat with AI models directly in the Godot editor
 - ⚙️ **Custom API Configuration**: Support for OpenAI and any OpenAI-compatible API (like Ollama, Azure OpenAI, etc.)
-- 📖 **Read Current Code**: Automatically read the currently open script and add it to the conversation context
-- 🎬 **Read Scene Context**: Automatically find and read the scene file (.tscn) that uses the current script
-- ✏️ **Apply Code Changes**: Apply AI-generated code directly to your current script
+- 📖 **Auto-Context**: Automatically reads the currently open script, scene, and project file structure
+- 🎬 **Scene Awareness**: Understands your scene hierarchy and node structure
+- ✏️ **Per-Block Apply**: Each code/diff block has its own Apply button for targeted changes
 - 📝 **Diff Mode**: Use unified diff format for code changes to save output time and see exactly what changed
+- 📁 **Multi-File Support**: Apply changes to any file in your project
 
 ## Installation
 
 1. Download or clone this repository
-2. Copy the `addons/godot_copilot` folder to your Godot project's `addons/` directory
+2. Copy the `addons/copilot` folder to your Godot project's `addons/` directory
 3. Open your project in Godot
 4. Go to **Project** → **Project Settings** → **Plugins**
 5. Enable **Godot Copilot**
@@ -46,31 +47,52 @@ AI-assisted development plugin for the Godot Engine. Chat with AI models and app
 
 ## Usage
 
-1. Open a GDScript file in the Godot editor
-2. Click **📖 Read Code** to add the current script to the conversation context
-3. (Optional) Click **🎬 Read Scene** to add the associated scene file (.tscn) to the context
-4. Type your question or request in the chat input
-5. Click **Send** to get a response from the AI
-6. If the AI provides code:
-   - Click **✏ Apply Code** to replace your current script with the AI-generated code
-   - Or click **📝 Apply Diff** to apply only the changed lines (when in diff mode)
+1. Open a GDScript file and/or a scene in the Godot editor
+2. Type your question or request in the chat input
+3. Click **Send** to get a response from the AI
+4. The AI automatically has context of:
+   - Your currently open scene (.tscn file)
+   - Your currently open script (.gd file)
+   - Your project file structure
+5. When the AI provides code changes:
+   - Each code block shows the target file path (e.g., `res://player.gd`)
+   - Click the **✏️ Apply Code** or **📝 Apply Diff** button below each code block to apply changes to that specific file
 
-### Diff Mode
+### Automatic Context
 
-Enable **Diff Mode** checkbox for more efficient code changes:
-- AI will respond with unified diff format showing only changed lines
-- Saves output time for large files
-- Makes changes more visible with context
-- Use **📝 Apply Diff** button to apply the changes
+The plugin automatically reads and sends the following context to the AI with every message:
+- **Current Scene**: The currently open scene file content
+- **Current Script**: The currently open script content
+- **File Tree**: Your project's file structure (scripts, scenes, resources)
+
+This allows the AI to understand your project structure and provide file-specific code changes.
+
+### Code Blocks with File Paths
+
+The AI will provide code changes with file paths like this:
+
+```gdscript:res://player.gd
+extends CharacterBody2D
+# Your code here
+```
+
+Or for diffs:
+
+```diff:res://player.gd
+@@ -1,3 +1,4 @@
+ extends CharacterBody2D
++@export var speed := 200.0
+ # ...
+```
+
+Each block has an **Apply** button that writes changes directly to the specified file.
 
 ## Tips
 
-- When asking for code modifications, the AI will provide code in markdown code blocks
-- The "Apply Code" button extracts code from the AI's response and replaces your current script content
-- The "Apply Diff" button applies only the changed lines when using diff format
+- The AI automatically knows about your open scene and script - just ask questions!
 - Use clear and specific prompts for best results
 - You can clear the chat history with the **🗑** button
-- Reading the scene file provides context about node structure, exported properties, and resources
+- Enable "Traditional Full Text Mode" in settings if you prefer complete code blocks instead of diffs
 
 ## License
 
