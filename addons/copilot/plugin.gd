@@ -48,18 +48,37 @@ func _set_dock_icon() -> void:
 	if not dock:
 		return
 	
-	# Wait for the next process frame to ensure the dock is in the scene tree
-	await get_tree().process_frame
+	# Use call_deferred to ensure the dock is fully set up
+	call_deferred("_apply_dock_icon")
+
+
+func _apply_dock_icon() -> void:
+	if not dock or not is_instance_valid(dock):
+		return
 	
-	# Get the parent TabContainer
-	var parent = dock.get_parent()
-	if parent is TabContainer:
-		var tab_container: TabContainer = parent
+	# Find the TabContainer that contains our dock
+	var tab_container := _find_parent_tab_container(dock)
+	if tab_container:
 		var tab_idx := tab_container.get_tab_idx_from_control(dock)
 		if tab_idx >= 0:
 			# Get the icon from the editor theme
 			var icon := get_editor_interface().get_base_control().get_theme_icon("GuiSliderGrabberHl", "EditorIcons")
-			tab_container.set_tab_icon(tab_idx, icon)
+			# In Godot 4.x, we need to use the TabBar to set the icon
+			var tab_bar := tab_container.get_tab_bar()
+			if tab_bar:
+				tab_bar.set_tab_icon(tab_idx, icon)
+			else:
+				# Fallback to TabContainer method
+				tab_container.set_tab_icon(tab_idx, icon)
+
+
+func _find_parent_tab_container(node: Node) -> TabContainer:
+	var parent = node.get_parent()
+	while parent:
+		if parent is TabContainer:
+			return parent
+		parent = parent.get_parent()
+	return null
 
 
 func _load_config() -> void:
