@@ -22,6 +22,9 @@ func _enter_tree() -> void:
 	dock.plugin = self
 	add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock)
 	
+	# Set the dock icon
+	_set_dock_icon()
+	
 	# Create settings dialog
 	settings_dialog = SettingsDialog.new()
 	settings_dialog.plugin = self
@@ -39,6 +42,24 @@ func _exit_tree() -> void:
 	if settings_dialog:
 		settings_dialog.queue_free()
 		settings_dialog = null
+
+
+func _set_dock_icon() -> void:
+	if not dock:
+		return
+	
+	# Wait for the dock to be in the scene tree
+	await dock.ready
+	
+	# Get the parent TabContainer
+	var parent = dock.get_parent()
+	if parent is TabContainer:
+		var tab_container := parent as TabContainer
+		var tab_idx := tab_container.get_tab_idx_from_control(dock)
+		if tab_idx >= 0:
+			# Get the icon from the editor theme
+			var icon := get_editor_interface().get_base_control().get_theme_icon("GuiSliderGrabberHl", "EditorIcons")
+			tab_container.set_tab_icon(tab_idx, icon)
 
 
 func _load_config() -> void:
