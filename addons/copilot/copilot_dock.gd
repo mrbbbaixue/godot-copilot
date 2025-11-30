@@ -4,11 +4,13 @@ extends VBoxContainer
 const LLMClient = preload("llm_client.gd")
 const MarkdownParser = preload("markdown_parser.gd")
 const DiffUtils = preload("diff_utils.gd")
+const ChatMessage = preload("chat_message.gd")
 
 var plugin: EditorPlugin
 
 # UI elements
-var chat_display: RichTextLabel
+var chat_scroll: ScrollContainer
+var chat_container: VBoxContainer
 var input_field: TextEdit
 var send_button: Button
 var settings_button: Button
@@ -28,6 +30,9 @@ var current_response := ""
 
 # Context tracking
 var current_script_path := ""
+
+# Streaming message widget
+var streaming_message: ChatMessage = null
 
 
 func _init() -> void:
@@ -104,15 +109,30 @@ func _setup_ui() -> void:
 	split_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(split_container)
 	
-	# Chat display area
-	chat_display = RichTextLabel.new()
-	chat_display.bbcode_enabled = true
-	chat_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	chat_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	chat_display.custom_minimum_size = Vector2(0, 200)
-	chat_display.selection_enabled = true
-	chat_display.scroll_following = true
-	split_container.add_child(chat_display)
+	# Chat display area with scroll container
+	chat_scroll = ScrollContainer.new()
+	chat_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	chat_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chat_scroll.custom_minimum_size = Vector2(0, 200)
+	chat_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	split_container.add_child(chat_scroll)
+	
+	# Chat container for messages
+	chat_container = VBoxContainer.new()
+	chat_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chat_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	chat_container.add_theme_constant_override("separation", 8)
+	chat_scroll.add_child(chat_container)
+	
+	# Add header to chat container
+	var chat_header := Label.new()
+	chat_header.text = "💬 Chat with AI"
+	chat_header.add_theme_font_size_override("font_size", 16)
+	chat_header.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
+	chat_container.add_child(chat_header)
+	
+	var separator := HSeparator.new()
+	chat_container.add_child(separator)
 	
 	# Input area container
 	var input_container := VBoxContainer.new()
@@ -155,9 +175,6 @@ func _setup_ui() -> void:
 	llm_client.chunk_received.connect(_on_llm_chunk)
 	llm_client.error_occurred.connect(_on_llm_error)
 	llm_client.request_finished.connect(_on_llm_finished)
-	
-	# Update display
-	_update_chat_display()
 
 
 func _process(_delta: float) -> void:
@@ -183,9 +200,17 @@ func _on_clear_pressed() -> void:
 	messages.clear()
 	current_response = ""
 	current_script_path = ""
-	_update_chat_display()
+	_clear_chat_display()
 	apply_code_button.disabled = true
 	apply_diff_button.disabled = true
+
+
+func _clear_chat_display() -> void:
+	# Remove all message widgets except header and separator
+	for child in chat_container.get_children():
+		if child is ChatMessage:
+			child.queue_free()
+	streaming_message = null
 
 
 func _on_read_code_pressed() -> void:
@@ -313,40 +338,32 @@ func _on_send_pressed() -> void:
 
 func _add_user_message(content: String) -> void:
 	messages.append({"role": "user", "content": content})
-	_update_chat_display()
+	_add_message_widget(ChatMessage.MessageRole.USER, content)
 
 
 func _add_assistant_message(content: String) -> void:
 	messages.append({"role": "assistant", "content": content})
 	current_response = content
-	_update_chat_display()
+	_add_message_widget(ChatMessage.MessageRole.ASSISTANT, content)
 	apply_code_button.disabled = _extract_code_from_response(content).is_empty()
 
 
 func _add_system_message(content: String) -> void:
-	chat_display.append_text("\n[color=yellow][System] %s[/color]\n" % content)
+	_add_message_widget(ChatMessage.MessageRole.SYSTEM, content)
 
 
-func _update_chat_display() -> void:
-	chat_display.clear()
-	chat_display.append_text("[b]Chat with AI[/b]\n")
-	chat_display.append_text("─".repeat(30) + "\n")
-	
-	for msg in messages:
-		if msg["role"] == "user":
-			chat_display.append_text("\n[color=cyan][b]You:[/b][/color]\n")
-			chat_display.append_text(_format_message(msg["content"]) + "\n")
-		elif msg["role"] == "assistant":
-			chat_display.append_text("\n[color=green][b]AI:[/b][/color]\n")
-			chat_display.append_text(_format_message(msg["content"]) + "\n")
-	
-	if llm_client and llm_client.is_streaming() and not current_response.is_empty():
-		chat_display.append_text("\n[color=green][b]AI:[/b][/color]\n")
-		chat_display.append_text(_format_message(current_response) + "\n")
+func _add_message_widget(role: ChatMessage.MessageRole, content: String) -> void:
+	var msg_widget := ChatMessage.new()
+	msg_widget.setup(role, content)
+	chat_container.add_child(msg_widget)
+	_scroll_to_bottom()
 
 
-func _format_message(content: String) -> String:
-	return MarkdownParser.parse(content)
+func _scroll_to_bottom() -> void:
+	# Delay scroll to allow layout to update
+	await get_tree().process_frame
+	if chat_scroll:
+		chat_scroll.scroll_vertical = int(chat_scroll.get_v_scroll_bar().max_value)
 
 
 func _send_to_api() -> void:
@@ -373,7 +390,16 @@ func _send_to_api() -> void:
 
 func _on_llm_chunk(chunk: String) -> void:
 	current_response += chunk
-	_update_chat_display()
+	
+	# Create or update streaming message widget
+	if streaming_message == null:
+		streaming_message = ChatMessage.new()
+		streaming_message.setup(ChatMessage.MessageRole.ASSISTANT, current_response)
+		chat_container.add_child(streaming_message)
+	else:
+		streaming_message.set_streaming_content(current_response)
+	
+	_scroll_to_bottom()
 
 
 func _on_llm_error(message: String) -> void:
@@ -390,10 +416,14 @@ func _on_llm_finished(full_response: String) -> void:
 		current_response = full_response
 		messages.append({"role": "assistant", "content": full_response})
 		
+		# Update the streaming message with final content
+		if streaming_message:
+			streaming_message.set_streaming_content(full_response)
+		
 		# Update button states based on response content
 		apply_code_button.disabled = _extract_code_from_response(full_response).is_empty()
 		apply_diff_button.disabled = not DiffUtils.contains_diff(full_response)
-		
-		_update_chat_display()
 	else:
 		_add_system_message("Empty response from AI.")
+	
+	streaming_message = null
