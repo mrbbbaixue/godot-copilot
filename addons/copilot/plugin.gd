@@ -63,6 +63,8 @@ func _apply_dock_icon() -> void:
 		if tab_idx >= 0:
 			# Get the icon from the editor theme
 			var icon := get_editor_interface().get_base_control().get_theme_icon("GuiSliderGrabberHl", "EditorIcons")
+			if not icon:
+				return
 			# In Godot 4.x, we need to use the TabBar to set the icon
 			var tab_bar := tab_container.get_tab_bar()
 			if tab_bar:
