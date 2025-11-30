@@ -222,8 +222,8 @@ static func generate_diff(old_text: String, new_text: String) -> String:
 	
 	# Format hunks
 	for hunk in hunks:
-		var old_count := hunk["context_before"].size() + hunk["old_lines"].size() + hunk["context_after"].size()
-		var new_count := hunk["context_before"].size() + hunk["new_lines"].size() + hunk["context_after"].size()
+		var old_count = hunk["context_before"].size() + hunk["old_lines"].size() + hunk["context_after"].size()
+		var new_count = hunk["context_before"].size() + hunk["new_lines"].size() + hunk["context_after"].size()
 		diff += "@@ -%d,%d +%d,%d @@\n" % [hunk["old_start"], old_count, hunk["old_start"], new_count]
 		
 		for line in hunk["context_before"]:

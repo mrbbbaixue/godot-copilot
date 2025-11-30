@@ -214,7 +214,7 @@ func _on_read_code_pressed() -> void:
 	
 	# Auto-read associated scene if exists
 	if not script_path.is_empty():
-		var scene_path := plugin.find_scene_for_script(script_path)
+		var scene_path = plugin.find_scene_for_script(script_path)
 		if not scene_path.is_empty():
 			_add_system_message("Found associated scene: %s (use 'Read Scene' to add to context)" % scene_path.get_file())
 
@@ -223,19 +223,19 @@ func _on_read_scene_pressed() -> void:
 	if not plugin:
 		return
 	
-	var script_path := plugin.get_current_script_path()
+	var script_path = plugin.get_current_script_path()
 	if script_path.is_empty():
 		_add_system_message("No script is currently open in the editor.")
 		return
 	
 	# Find the scene file that uses this script
-	var scene_path := plugin.find_scene_for_script(script_path)
+	var scene_path = plugin.find_scene_for_script(script_path)
 	
 	if scene_path.is_empty():
 		_add_system_message("No scene file found that references this script.")
 		return
 	
-	var scene_content := plugin.read_scene_content(scene_path)
+	var scene_content = plugin.read_scene_content(scene_path)
 	if scene_content.is_empty():
 		_add_system_message("Failed to read scene file: %s" % scene_path)
 		return
@@ -263,7 +263,7 @@ func _on_apply_diff_pressed() -> void:
 	if not plugin or current_response.is_empty():
 		return
 	
-	var current_code := plugin.get_current_code()
+	var current_code = plugin.get_current_code()
 	if current_code.is_empty():
 		_add_system_message("No script is currently open in the editor.")
 		return
