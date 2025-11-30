@@ -177,3 +177,95 @@ func _find_code_edit(node: Node) -> CodeEdit:
 		if result:
 			return result
 	return null
+
+
+## Get the currently open scene path
+func get_current_scene_path() -> String:
+	var edited_scene_root := get_editor_interface().get_edited_scene_root()
+	if edited_scene_root and edited_scene_root.scene_file_path:
+		return edited_scene_root.scene_file_path
+	return ""
+
+
+## Get the file tree structure of the project (excluding addons folder)
+func get_file_tree(base_path: String = "res://", max_depth: int = 4) -> String:
+	return _build_file_tree(base_path, 0, max_depth)
+
+
+func _build_file_tree(dir_path: String, depth: int, max_depth: int) -> String:
+	if depth >= max_depth:
+		return ""
+	
+	var result := ""
+	var dir := DirAccess.open(dir_path)
+	
+	if not dir:
+		return ""
+	
+	var indent := "  ".repeat(depth)
+	var dirs := []
+	var files := []
+	
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	
+	while file_name != "":
+		if file_name.begins_with("."):
+			file_name = dir.get_next()
+			continue
+		
+		# Skip addons folder and .import folder
+		if file_name == "addons" or file_name == ".import" or file_name == ".godot":
+			file_name = dir.get_next()
+			continue
+		
+		var full_path := dir_path.path_join(file_name)
+		
+		if dir.current_is_dir():
+			dirs.append(file_name)
+		else:
+			# Only include relevant files
+			if _is_relevant_file(file_name):
+				files.append(file_name)
+		
+		file_name = dir.get_next()
+	
+	dir.list_dir_end()
+	
+	# Sort for consistent output
+	dirs.sort()
+	files.sort()
+	
+	# Add directories first
+	for d in dirs:
+		result += indent + "📁 " + d + "/\n"
+		result += _build_file_tree(dir_path.path_join(d), depth + 1, max_depth)
+	
+	# Then add files
+	for f in files:
+		result += indent + "📄 " + f + "\n"
+	
+	return result
+
+
+func _is_relevant_file(file_name: String) -> bool:
+	var extensions := [".gd", ".tscn", ".tres", ".cfg", ".json", ".txt", ".md", ".shader", ".gdshader"]
+	for ext in extensions:
+		if file_name.ends_with(ext):
+			return true
+	return false
+
+
+## Read file content by path
+func read_file_content(file_path: String) -> String:
+	return _read_file_content(file_path)
+
+
+## Write content to a file
+func write_file_content(file_path: String, content: String) -> bool:
+	var file := FileAccess.open(file_path, FileAccess.WRITE)
+	if file:
+		file.store_string(content)
+		file.close()
+		return true
+	return false

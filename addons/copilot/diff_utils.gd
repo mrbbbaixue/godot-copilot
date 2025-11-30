@@ -228,3 +228,87 @@ static func _find_line(line: String, lines: Array, start: int) -> int:
 		if lines[i] == line:
 			return i
 	return -1
+
+
+## Extract file path from diff block header
+static func extract_file_path_from_diff(diff_text: String) -> String:
+	var lines := diff_text.split("\n")
+	
+	for line in lines:
+		# Match +++ b/path/to/file.gd or +++ path/to/file.gd
+		if line.begins_with("+++"):
+			var path_part := line.substr(4).strip_edges()
+			# Remove 'b/' prefix if present
+			if path_part.begins_with("b/"):
+				path_part = path_part.substr(2)
+			# Remove 'a/' prefix if present (shouldn't be, but just in case)
+			if path_part.begins_with("a/"):
+				path_part = path_part.substr(2)
+			# Return the path if it's a valid resource path
+			if not path_part.is_empty() and path_part != "modified" and path_part != "/dev/null":
+				return path_part
+	
+	return ""
+
+
+## Extract all diff blocks from a response with their file paths
+## Returns an array of dictionaries: [{path: String, diff: String, is_new_file: bool}, ...]
+static func extract_all_diffs(text: String) -> Array:
+	var diffs := []
+	
+	# First try to extract from markdown code blocks
+	var code_block_regex := RegEx.new()
+	code_block_regex.compile("```diff\\s*\\n([\\s\\S]*?)\\n```")
+	var matches := code_block_regex.search_all(text)
+	
+	if matches.size() > 0:
+		for m in matches:
+			var diff_content := m.get_string(1)
+			var file_path := extract_file_path_from_diff(diff_content)
+			var is_new_file := diff_content.contains("--- /dev/null") or diff_content.contains("--- a/dev/null")
+			
+			if not file_path.is_empty():
+				diffs.append({
+					"path": file_path,
+					"diff": diff_content,
+					"is_new_file": is_new_file,
+					"full_match": m.get_string(0)
+				})
+	
+	return diffs
+
+
+## Extract code blocks with file path comments
+## Returns an array of dictionaries: [{path: String, code: String}, ...]
+static func extract_code_blocks_with_paths(text: String) -> Array:
+	var blocks := []
+	
+	var code_block_regex := RegEx.new()
+	code_block_regex.compile("```(?:gdscript|gd)?\\s*\\n([\\s\\S]*?)\\n```")
+	var matches := code_block_regex.search_all(text)
+	
+	for m in matches:
+		var code := m.get_string(1)
+		var file_path := ""
+		
+		# Check for file path comment at the start
+		var lines := code.split("\n")
+		if lines.size() > 0:
+			var first_line := lines[0].strip_edges()
+			var path_regex := RegEx.new()
+			path_regex.compile("^#\\s*[Ff]ile:\\s*(.+)$")
+			var path_match := path_regex.search(first_line)
+			if path_match:
+				file_path = path_match.get_string(1).strip_edges()
+				# Remove the file path comment from code
+				lines.remove_at(0)
+				code = "\n".join(lines)
+		
+		if not file_path.is_empty():
+			blocks.append({
+				"path": file_path,
+				"code": code,
+				"full_match": m.get_string(0)
+			})
+	
+	return blocks
