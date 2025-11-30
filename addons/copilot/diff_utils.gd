@@ -80,7 +80,7 @@ static func apply_diff(original_code: String, diff_text: String) -> Dictionary:
 	var original_lines := original_code.split("\n")
 	var result_lines := original_lines.duplicate()
 	var lines := actual_diff.split("\n")
-	var offset := 0  # Track line offset due to insertions/deletions
+	var total_offset := 0  # Track cumulative line offset due to insertions/deletions
 	
 	var i := 0
 	while i < lines.size():
@@ -93,69 +93,57 @@ static func apply_diff(original_code: String, diff_text: String) -> Dictionary:
 				i += 1
 				continue
 			
-			var old_start: int = hunk["old_start"] - 1 + offset  # Convert to 0-indexed
-			var delete_lines := []
-			var insert_lines := []
-			
+			# Parse all lines in this hunk first
+			var hunk_operations := []  # Array of {type: "context"|"delete"|"add", content: String}
 			i += 1
 			
-			# Parse hunk content
 			while i < lines.size():
 				var content_line := lines[i]
 				if content_line.begins_with("@@") or content_line.begins_with("diff ") or content_line.begins_with("---") or content_line.begins_with("+++"):
 					break
 				
 				if content_line.begins_with("-"):
-					delete_lines.append(content_line.substr(1))
+					hunk_operations.append({"type": "delete", "content": content_line.substr(1)})
 				elif content_line.begins_with("+"):
-					insert_lines.append(content_line.substr(1))
-				elif content_line.begins_with(" ") or content_line.is_empty():
-					# Context line (or empty context line) with changes accumulated - apply them
-					if delete_lines.size() > 0 or insert_lines.size() > 0:
-						var apply_result := _apply_single_change(result_lines, old_start, delete_lines, insert_lines)
-						if not apply_result["success"]:
-							return {"success": false, "error": apply_result["error"], "code": ""}
-						offset += insert_lines.size() - delete_lines.size()
-						old_start += delete_lines.size() + 1  # Move past deleted lines and context
-						delete_lines = []
-						insert_lines = []
-					else:
-						old_start += 1
+					hunk_operations.append({"type": "add", "content": content_line.substr(1)})
+				elif content_line.begins_with(" "):
+					hunk_operations.append({"type": "context", "content": content_line.substr(1)})
+				elif content_line.is_empty():
+					# Empty line in diff - treat as empty context line
+					hunk_operations.append({"type": "context", "content": ""})
 				
 				i += 1
 			
-			# Apply any remaining changes
-			if delete_lines.size() > 0 or insert_lines.size() > 0:
-				var apply_result := _apply_single_change(result_lines, old_start, delete_lines, insert_lines)
-				if not apply_result["success"]:
-					return {"success": false, "error": apply_result["error"], "code": ""}
-				offset += insert_lines.size() - delete_lines.size()
+			# Apply the hunk operations
+			var current_line := hunk["old_start"] - 1 + total_offset  # 0-indexed with offset
+			var hunk_offset := 0
+			
+			for op in hunk_operations:
+				if op["type"] == "context":
+					# Verify context line matches (with fuzzy matching)
+					if current_line < result_lines.size():
+						if result_lines[current_line].strip_edges() != op["content"].strip_edges():
+							return {"success": false, "error": "Context line %d mismatch: expected '%s', got '%s'" % [current_line + 1, op["content"].strip_edges(), result_lines[current_line].strip_edges()]}
+					current_line += 1
+				elif op["type"] == "delete":
+					# Verify and delete line
+					if current_line >= result_lines.size():
+						return {"success": false, "error": "Line %d does not exist in original code" % (current_line + 1)}
+					if result_lines[current_line].strip_edges() != op["content"].strip_edges():
+						return {"success": false, "error": "Line %d mismatch: expected '%s', got '%s'" % [current_line + 1, op["content"].strip_edges(), result_lines[current_line].strip_edges()]}
+					result_lines.remove_at(current_line)
+					hunk_offset -= 1
+				elif op["type"] == "add":
+					# Insert new line
+					result_lines.insert(current_line, op["content"])
+					current_line += 1
+					hunk_offset += 1
+			
+			total_offset += hunk_offset
 		else:
 			i += 1
 	
 	return {"success": true, "error": "", "code": "\n".join(result_lines)}
-
-
-## Apply a single change (delete some lines, insert others)
-static func _apply_single_change(result_lines: Array, start_idx: int, delete_lines: Array, insert_lines: Array) -> Dictionary:
-	# Validate the lines to delete match
-	for j in range(delete_lines.size()):
-		var idx := start_idx + j
-		if idx >= result_lines.size():
-			return {"success": false, "error": "Line %d does not exist in original code" % (idx + 1)}
-		# Allow fuzzy matching (ignore leading/trailing whitespace differences)
-		if result_lines[idx].strip_edges() != delete_lines[j].strip_edges():
-			return {"success": false, "error": "Line %d mismatch: expected '%s', got '%s'" % [idx + 1, delete_lines[j].strip_edges(), result_lines[idx].strip_edges()]}
-	
-	# Remove the lines
-	for j in range(delete_lines.size()):
-		result_lines.remove_at(start_idx)
-	
-	# Insert new lines
-	for j in range(insert_lines.size()):
-		result_lines.insert(start_idx + j, insert_lines[j])
-	
-	return {"success": true, "error": ""}
 
 
 ## Extract diff content from markdown code block
