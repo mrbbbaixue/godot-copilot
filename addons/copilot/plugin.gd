@@ -22,8 +22,9 @@ func _enter_tree() -> void:
 	dock.plugin = self
 	add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock)
 	
-	# Set the dock icon
+	# Set the dock icon and connect to reparented signal to re-apply when moved
 	_set_dock_icon()
+	dock.reparented.connect(_on_dock_reparented)
 	
 	# Create settings dialog
 	settings_dialog = SettingsDialog.new()
@@ -50,6 +51,11 @@ func _set_dock_icon() -> void:
 	
 	# Use call_deferred to ensure the dock is fully set up
 	call_deferred("_apply_dock_icon")
+
+
+func _on_dock_reparented(_node: Node) -> void:
+	# Re-apply the icon when the dock is moved to a different location
+	_set_dock_icon()
 
 
 func _apply_dock_icon() -> void:
