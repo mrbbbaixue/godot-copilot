@@ -18,6 +18,7 @@ var apply_diff_button: Button
 var read_code_button: Button
 var read_scene_button: Button
 var stop_button: Button
+var title_icon: TextureRect
 
 # API client
 var llm_client: LLMClient
@@ -35,11 +36,23 @@ func _init() -> void:
 	_setup_ui()
 
 
+func _ready() -> void:
+	# Load the icon from the editor theme
+	if plugin:
+		var editor_base := plugin.get_editor_interface().get_base_control()
+		title_icon.texture = editor_base.get_theme_icon("MemberAnnotation", "EditorIcons")
+
+
 func _setup_ui() -> void:
 	# Header with buttons
 	var header := HBoxContainer.new()
 	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(header)
+	
+	title_icon = TextureRect.new()
+	title_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	title_icon.custom_minimum_size = Vector2(16, 16)
+	header.add_child(title_icon)
 	
 	var title := Label.new()
 	title.text = "AI Copilot"
