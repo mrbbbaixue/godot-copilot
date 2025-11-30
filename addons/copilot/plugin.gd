@@ -48,13 +48,13 @@ func _set_dock_icon() -> void:
 	if not dock:
 		return
 	
-	# Wait for the dock to be in the scene tree
-	await dock.ready
+	# Wait for the next process frame to ensure the dock is in the scene tree
+	await get_tree().process_frame
 	
 	# Get the parent TabContainer
 	var parent = dock.get_parent()
 	if parent is TabContainer:
-		var tab_container := parent as TabContainer
+		var tab_container: TabContainer = parent
 		var tab_idx := tab_container.get_tab_idx_from_control(dock)
 		if tab_idx >= 0:
 			# Get the icon from the editor theme
