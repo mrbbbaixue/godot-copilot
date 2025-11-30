@@ -25,7 +25,7 @@ Rules for diffs:
 
 For new files, use this format:
 ```diff
---- /dev/null
+--- a/dev/null
 +++ b/path/to/new_file.gd
 @@ -0,0 +1,N @@
 +new file content line 1

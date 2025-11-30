@@ -265,7 +265,7 @@ static func extract_all_diffs(text: String) -> Array:
 		for m in matches:
 			var diff_content := m.get_string(1)
 			var file_path := extract_file_path_from_diff(diff_content)
-			var is_new_file := diff_content.contains("--- /dev/null") or diff_content.contains("--- a//dev/null")
+			var is_new_file := diff_content.contains("--- /dev/null") or diff_content.contains("--- a/dev/null")
 			
 			if not file_path.is_empty():
 				diffs.append({

@@ -249,7 +249,7 @@ func _on_apply_diff_to_file(file_path: String, diff_text: String) -> void:
 	
 	# Read original file content
 	var original_content := plugin.read_file_content(file_path)
-	if original_content.is_empty() and not diff_text.contains("--- /dev/null"):
+	if original_content.is_empty() and not (diff_text.contains("--- /dev/null") or diff_text.contains("--- a/dev/null")):
 		_add_system_message("Cannot read file: %s" % file_path)
 		return
 	
