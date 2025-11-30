@@ -35,6 +35,8 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	# Clean up dock
 	if dock:
+		if dock.reparented.is_connected(_on_dock_reparented):
+			dock.reparented.disconnect(_on_dock_reparented)
 		remove_control_from_docks(dock)
 		dock.queue_free()
 		dock = null
