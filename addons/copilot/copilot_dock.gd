@@ -175,22 +175,22 @@ func _build_auto_context() -> String:
 	var context_parts := []
 	
 	# 1. File tree structure
-	var file_tree := plugin.get_file_tree()
+	var file_tree = plugin.get_file_tree()
 	if not file_tree.is_empty():
 		context_parts.append("## Project File Structure:\n```\n%s```" % file_tree)
 	
 	# 2. Current open scene
-	var scene_path := plugin.get_current_scene_path()
+	var scene_path = plugin.get_current_scene_path()
 	if not scene_path.is_empty():
-		var scene_content := plugin.read_scene_content(scene_path)
+		var scene_content = plugin.read_scene_content(scene_path)
 		if not scene_content.is_empty():
 			context_parts.append("## Currently Open Scene (%s):\n```tscn\n%s\n```" % [scene_path, scene_content])
 	
 	# 3. Current script in code editor
-	var script := plugin.get_current_script()
-	var code := plugin.get_current_code()
+	var script = plugin.get_current_script()
+	var code = plugin.get_current_code()
 	if script and not code.is_empty():
-		var script_path := script.resource_path
+		var script_path = script.resource_path
 		current_script_path = script_path
 		context_parts.append("## Currently Open Script (%s):\n```gdscript\n%s\n```" % [script_path, code])
 	
@@ -248,7 +248,7 @@ func _on_apply_diff_to_file(file_path: String, diff_text: String) -> void:
 		return
 	
 	# Read original file content
-	var original_content := plugin.read_file_content(file_path)
+	var original_content = plugin.read_file_content(file_path)
 	if original_content.is_empty() and not (diff_text.contains("--- /dev/null") or diff_text.contains("--- a/dev/null")):
 		_add_system_message("Cannot read file: %s" % file_path)
 		return
