@@ -149,7 +149,9 @@ static func apply_diff(original_code: String, diff_text: String) -> Dictionary:
 ## Extract diff content from markdown code block
 static func _extract_diff_from_markdown(text: String) -> String:
 	var regex := RegEx.new()
-	regex.compile("```(?:diff)?\\s*\\n([\\s\\S]*?)\\n```")
+	# Make trailing newline before closing backticks optional to handle AI responses
+	# that don't include a newline before ```
+	regex.compile("```(?:diff)?\\s*\\n([\\s\\S]*?)\\n?```")
 	var result := regex.search(text)
 	if result:
 		return result.get_string(1)
@@ -257,8 +259,10 @@ static func extract_all_diffs(text: String) -> Array:
 	var diffs := []
 	
 	# First try to extract from markdown code blocks
+	# Make trailing newline before closing backticks optional to handle AI responses
+	# that don't include a newline before ```
 	var code_block_regex := RegEx.new()
-	code_block_regex.compile("```diff\\s*\\n([\\s\\S]*?)\\n```")
+	code_block_regex.compile("```diff\\s*\\n([\\s\\S]*?)\\n?```")
 	var matches := code_block_regex.search_all(text)
 	
 	if matches.size() > 0:
@@ -283,8 +287,10 @@ static func extract_all_diffs(text: String) -> Array:
 static func extract_code_blocks_with_paths(text: String) -> Array:
 	var blocks := []
 	
+	# Make trailing newline before closing backticks optional to handle AI responses
+	# that don't include a newline before ```
 	var code_block_regex := RegEx.new()
-	code_block_regex.compile("```(?:gdscript|gd)?\\s*\\n([\\s\\S]*?)\\n```")
+	code_block_regex.compile("```(?:gdscript|gd)?\\s*\\n([\\s\\S]*?)\\n?```")
 	var matches := code_block_regex.search_all(text)
 	
 	for m in matches:

@@ -26,7 +26,9 @@ static func parse(text: String) -> String:
 	var current_pos = 0
 	var code_block_regex = RegEx.new()
 	# Match ```language ... ``` and capture the language
-	code_block_regex.compile("```(\\w*)\\s*\\n([\\s\\S]*?)\\n```")
+	# Make trailing newline before closing backticks optional to handle AI responses
+	# that don't include a newline before ```
+	code_block_regex.compile("```(\\w*)\\s*\\n([\\s\\S]*?)\\n?```")
 	
 	var matches = code_block_regex.search_all(text)
 	
