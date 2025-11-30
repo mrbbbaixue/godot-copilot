@@ -213,15 +213,19 @@ func _on_send_pressed() -> void:
 			full_message = auto_context + "\n\n---\n\n## User Request:\n" + user_input
 			_add_system_message("📂 Auto-included: project file tree, current scene, and current script")
 	
-	_add_user_message(full_message)
+	# Add full message (with context) to API messages, but only show user input in UI
+	_add_user_message(full_message, user_input)
 	input_field.text = ""
 	
 	_send_to_api()
 
 
-func _add_user_message(content: String) -> void:
-	messages.append({"role": "user", "content": content})
-	_add_message_widget(ChatMessage.MessageRole.USER, content)
+func _add_user_message(api_content: String, display_content: String = "") -> void:
+	# api_content: full message sent to API (may include auto-context)
+	# display_content: message shown in UI (just user input, no context)
+	messages.append({"role": "user", "content": api_content})
+	var show_content := display_content if not display_content.is_empty() else api_content
+	_add_message_widget(ChatMessage.MessageRole.USER, show_content)
 
 
 func _add_system_message(content: String) -> void:
