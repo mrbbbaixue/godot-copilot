@@ -214,15 +214,15 @@ func _get_context_prompt() -> String:
 		return ""
 	
 	# Get current scene
-	var scene_path := plugin.get_current_scene_path()
-	var scene_content := plugin.get_current_scene_content()
+	var scene_path = plugin.get_current_scene_path()
+	var scene_content = plugin.get_current_scene_content()
 	
 	# Get current script
-	var script_path := plugin.get_current_script_path()
-	var script_content := plugin.get_current_code()
+	var script_path = plugin.get_current_script_path()
+	var script_content = plugin.get_current_code()
 	
 	# Get file tree
-	var file_tree := plugin.get_file_tree()
+	var file_tree = plugin.get_file_tree()
 	
 	return SystemPrompts.build_context_prompt(scene_path, scene_content, script_path, script_content, file_tree)
 
