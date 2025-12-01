@@ -37,9 +37,8 @@ static func parse_diff(diff_text: String) -> Array:
 					delete_lines.append(content_line.substr(1))
 				elif content_line.begins_with("+"):
 					insert_lines.append(content_line.substr(1))
-				elif content_line.begins_with(" ") or content_line.is_empty():
-					# Context line - if we had accumulated changes, process them
-					pass
+				# Context lines (with space prefix, empty, or without prefix from AI)
+				# don't need to be tracked in parse_diff, just skip them
 				
 				i += 1
 			
@@ -111,6 +110,9 @@ static func apply_diff(original_code: String, diff_text: String) -> Dictionary:
 				elif content_line.is_empty():
 					# Empty line in diff - treat as empty context line
 					hunk_operations.append({"type": "context", "content": ""})
+				else:
+					# Lines without prefix (AI sometimes omits space prefix) - treat as context
+					hunk_operations.append({"type": "context", "content": content_line})
 				
 				i += 1
 			
