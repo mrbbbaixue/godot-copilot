@@ -5,7 +5,7 @@ extends RefCounted
 
 const LOOKAHEAD_LINES = 5
 const FUZZY_SEARCH_WINDOW = 10  # Lines to search around suggested position
-const TAB_WIDTH = 4  # Spaces per tab for normalization
+const TAB_WIDTH = 4  # Spaces per tab for normalization to tabs
 
 
 ## Parse a unified diff and return a list of hunks
@@ -185,10 +185,9 @@ static func _check_hunk_match(lines: Array, operations: Array, start_pos: int) -
 
 ## Check if two lines match with fuzzy whitespace handling
 static func _lines_match_fuzzy(line1: String, line2: String) -> bool:
-	# Normalize whitespace: replace tabs with spaces, strip trailing whitespace
-	var tab_spaces := " ".repeat(TAB_WIDTH)
-	var norm1 := line1.replace("\t", tab_spaces).rstrip(" \t")
-	var norm2 := line2.replace("\t", tab_spaces).rstrip(" \t")
+	# Normalize whitespace: convert space sequences to tabs, strip trailing whitespace
+	var norm1 := _normalize_to_tabs(line1).rstrip(" \t")
+	var norm2 := _normalize_to_tabs(line2).rstrip(" \t")
 	
 	# For empty lines, both should be empty after stripping
 	if norm1.strip_edges().is_empty() and norm2.strip_edges().is_empty():
@@ -196,6 +195,39 @@ static func _lines_match_fuzzy(line1: String, line2: String) -> bool:
 	
 	# Otherwise, compare normalized content
 	return norm1 == norm2
+
+
+## Normalize a line by converting leading space sequences to tabs
+static func _normalize_to_tabs(line: String) -> String:
+	# Find leading whitespace
+	var leading_spaces := 0
+	for i in range(line.length()):
+		if line[i] == ' ':
+			leading_spaces += 1
+		elif line[i] == '\t':
+			# Count tab as TAB_WIDTH spaces
+			leading_spaces += TAB_WIDTH
+		else:
+			break
+	
+	# Convert to tabs
+	var num_tabs := leading_spaces / TAB_WIDTH
+	var remaining_spaces := leading_spaces % TAB_WIDTH
+	
+	# Get the non-whitespace part
+	var content_start := 0
+	for i in range(line.length()):
+		if line[i] != ' ' and line[i] != '\t':
+			content_start = i
+			break
+	
+	# Reconstruct with tabs
+	var result := "\t".repeat(num_tabs)
+	if remaining_spaces > 0:
+		result += " ".repeat(remaining_spaces)
+	result += line.substr(content_start)
+	
+	return result
 
 
 ## Apply hunk operations at a specific position and return the offset
