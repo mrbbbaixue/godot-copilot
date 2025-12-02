@@ -123,7 +123,7 @@ static func apply_diff(original_code: String, diff_text: String) -> Dictionary:
 			if not match_result["found"]:
 				return {"success": false, "error": match_result["error"]}
 			
-			var start_pos := match_result["position"]
+			var start_pos = match_result["position"]
 			var hunk_offset := _apply_hunk_operations(result_lines, hunk_operations, start_pos)
 			
 			total_offset += hunk_offset
@@ -158,7 +158,7 @@ static func _find_hunk_position(lines: Array, operations: Array, suggested_pos: 
 			return {"found": true, "position": pos}
 	
 	# Could not find a match
-	var first_context := context_lines[0]  # Guaranteed to exist by check at line 142
+	var first_context = context_lines[0]  # Guaranteed to exist by check at line 142
 	return {
 		"found": false,
 		"error": "Could not find matching context near line %d. Looking for: '%s'" % [suggested_pos + 1, first_context.strip_edges()]
