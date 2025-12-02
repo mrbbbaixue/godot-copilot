@@ -4,6 +4,8 @@ extends RefCounted
 ## Utility class for parsing and applying unified diff format changes
 
 const LOOKAHEAD_LINES = 5
+const FUZZY_SEARCH_WINDOW = 10  # Lines to search around suggested position
+const TAB_WIDTH = 4  # Spaces per tab for normalization
 
 
 ## Parse a unified diff and return a list of hunks
@@ -148,16 +150,15 @@ static func _find_hunk_position(lines: Array, operations: Array, suggested_pos: 
 		return {"found": true, "position": suggested_pos}
 	
 	# Try fuzzy search within a window around suggested position
-	var search_window := 10
-	var start_search := maxi(0, suggested_pos - search_window)
-	var end_search := mini(lines.size(), suggested_pos + search_window)
+	var start_search := maxi(0, suggested_pos - FUZZY_SEARCH_WINDOW)
+	var end_search := mini(lines.size(), suggested_pos + FUZZY_SEARCH_WINDOW)
 	
 	for pos in range(start_search, end_search):
 		if _check_hunk_match(lines, operations, pos):
 			return {"found": true, "position": pos}
 	
 	# Could not find a match
-	var first_context := context_lines[0] if context_lines.size() > 0 else ""
+	var first_context := context_lines[0]  # Guaranteed to exist by check at line 142
 	return {
 		"found": false,
 		"error": "Could not find matching context near line %d. Looking for: '%s'" % [suggested_pos + 1, first_context.strip_edges()]
@@ -185,8 +186,9 @@ static func _check_hunk_match(lines: Array, operations: Array, start_pos: int) -
 ## Check if two lines match with fuzzy whitespace handling
 static func _lines_match_fuzzy(line1: String, line2: String) -> bool:
 	# Normalize whitespace: replace tabs with spaces, strip trailing whitespace
-	var norm1 := line1.replace("\t", "    ").rstrip(" \t")
-	var norm2 := line2.replace("\t", "    ").rstrip(" \t")
+	var tab_spaces := " ".repeat(TAB_WIDTH)
+	var norm1 := line1.replace("\t", tab_spaces).rstrip(" \t")
+	var norm2 := line2.replace("\t", tab_spaces).rstrip(" \t")
 	
 	# For empty lines, both should be empty after stripping
 	if norm1.strip_edges().is_empty() and norm2.strip_edges().is_empty():
