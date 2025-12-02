@@ -199,8 +199,10 @@ static func _lines_match_fuzzy(line1: String, line2: String) -> bool:
 
 ## Normalize a line by converting leading space sequences to tabs
 static func _normalize_to_tabs(line: String) -> String:
-	# Find leading whitespace
+	# Find leading whitespace and content start in single pass
 	var leading_spaces := 0
+	var content_start := 0
+	
 	for i in range(line.length()):
 		if line[i] == ' ':
 			leading_spaces += 1
@@ -208,18 +210,12 @@ static func _normalize_to_tabs(line: String) -> String:
 			# Count tab as TAB_WIDTH spaces
 			leading_spaces += TAB_WIDTH
 		else:
+			content_start = i
 			break
 	
 	# Convert to tabs
 	var num_tabs := leading_spaces / TAB_WIDTH
 	var remaining_spaces := leading_spaces % TAB_WIDTH
-	
-	# Get the non-whitespace part
-	var content_start := 0
-	for i in range(line.length()):
-		if line[i] != ' ' and line[i] != '\t':
-			content_start = i
-			break
 	
 	# Reconstruct with tabs
 	var result := "\t".repeat(num_tabs)
