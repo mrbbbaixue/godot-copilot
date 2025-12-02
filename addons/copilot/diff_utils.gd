@@ -116,36 +116,103 @@ static func apply_diff(original_code: String, diff_text: String) -> Dictionary:
 				
 				i += 1
 			
-			# Apply the hunk operations
-			var current_line = hunk["old_start"] - 1 + total_offset  # 0-indexed with offset
-			var hunk_offset := 0
+			# Try to find the best matching position for this hunk using fuzzy search
+			var match_result := _find_hunk_position(result_lines, hunk_operations, hunk["old_start"] - 1 + total_offset)
+			if not match_result["found"]:
+				return {"success": false, "error": match_result["error"]}
 			
-			for op in hunk_operations:
-				if op["type"] == "context":
-					# Verify context line matches (with fuzzy matching)
-					if current_line < result_lines.size():
-						if result_lines[current_line].strip_edges() != op["content"].strip_edges():
-							return {"success": false, "error": "Context line %d mismatch: expected '%s', got '%s'" % [current_line + 1, op["content"].strip_edges(), result_lines[current_line].strip_edges()]}
-					current_line += 1
-				elif op["type"] == "delete":
-					# Verify and delete line
-					if current_line >= result_lines.size():
-						return {"success": false, "error": "Line %d does not exist in original code" % (current_line + 1)}
-					if result_lines[current_line].strip_edges() != op["content"].strip_edges():
-						return {"success": false, "error": "Line %d mismatch: expected '%s', got '%s'" % [current_line + 1, op["content"].strip_edges(), result_lines[current_line].strip_edges()]}
-					result_lines.remove_at(current_line)
-					hunk_offset -= 1
-				elif op["type"] == "add":
-					# Insert new line
-					result_lines.insert(current_line, op["content"])
-					current_line += 1
-					hunk_offset += 1
+			var start_pos := match_result["position"]
+			var hunk_offset := _apply_hunk_operations(result_lines, hunk_operations, start_pos)
 			
 			total_offset += hunk_offset
 		else:
 			i += 1
 	
 	return {"success": true, "error": "", "code": "\n".join(result_lines)}
+
+
+## Find the best position to apply a hunk using fuzzy matching
+static func _find_hunk_position(lines: Array, operations: Array, suggested_pos: int) -> Dictionary:
+	# Extract context lines to search for
+	var context_lines := []
+	for op in operations:
+		if op["type"] == "context" or op["type"] == "delete":
+			context_lines.append(op["content"])
+	
+	if context_lines.is_empty():
+		# No context, use suggested position
+		return {"found": true, "position": suggested_pos}
+	
+	# Try exact position first
+	if _check_hunk_match(lines, operations, suggested_pos):
+		return {"found": true, "position": suggested_pos}
+	
+	# Try fuzzy search within a window around suggested position
+	var search_window := 10
+	var start_search := maxi(0, suggested_pos - search_window)
+	var end_search := mini(lines.size(), suggested_pos + search_window)
+	
+	for pos in range(start_search, end_search):
+		if _check_hunk_match(lines, operations, pos):
+			return {"found": true, "position": pos}
+	
+	# Could not find a match
+	var first_context := context_lines[0] if context_lines.size() > 0 else ""
+	return {
+		"found": false,
+		"error": "Could not find matching context near line %d. Looking for: '%s'" % [suggested_pos + 1, first_context.strip_edges()]
+	}
+
+
+## Check if a hunk matches at a given position with fuzzy whitespace matching
+static func _check_hunk_match(lines: Array, operations: Array, start_pos: int) -> bool:
+	var pos := start_pos
+	
+	for op in operations:
+		if op["type"] == "context" or op["type"] == "delete":
+			if pos >= lines.size():
+				return false
+			if not _lines_match_fuzzy(lines[pos], op["content"]):
+				return false
+			pos += 1
+		elif op["type"] == "add":
+			# Add operations don't need to match existing lines
+			pass
+	
+	return true
+
+
+## Check if two lines match with fuzzy whitespace handling
+static func _lines_match_fuzzy(line1: String, line2: String) -> bool:
+	# Normalize whitespace: replace tabs with spaces, strip trailing whitespace
+	var norm1 := line1.replace("\t", "    ").rstrip(" \t")
+	var norm2 := line2.replace("\t", "    ").rstrip(" \t")
+	
+	# For empty lines, both should be empty after stripping
+	if norm1.strip_edges().is_empty() and norm2.strip_edges().is_empty():
+		return true
+	
+	# Otherwise, compare normalized content
+	return norm1 == norm2
+
+
+## Apply hunk operations at a specific position and return the offset
+static func _apply_hunk_operations(lines: Array, operations: Array, start_pos: int) -> int:
+	var current_pos := start_pos
+	var offset := 0
+	
+	for op in operations:
+		if op["type"] == "context":
+			current_pos += 1
+		elif op["type"] == "delete":
+			lines.remove_at(current_pos)
+			offset -= 1
+		elif op["type"] == "add":
+			lines.insert(current_pos, op["content"])
+			current_pos += 1
+			offset += 1
+	
+	return offset
 
 
 ## Extract diff content from markdown code block
