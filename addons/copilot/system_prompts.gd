@@ -19,13 +19,14 @@ IMPORTANT: When providing code modifications, ALWAYS use unified diff format wit
 
 CRITICAL RULES for diffs:
 1. ALWAYS include the full file path in --- and +++ lines (e.g., --- a/res://main.gd)
-2. Context lines (unchanged lines) MUST start with a SPACE character
-3. Removed lines MUST start with a minus (-) character
+2. Context lines (unchanged lines) MUST start with EXACTLY ONE SPACE character
+3. Removed lines MUST start with a minus (-) character  
 4. Added lines MUST start with a plus (+) character
 5. Include 2-3 lines of context around each change
 6. Line numbers in @@ headers must be accurate
 7. Each diff block should target a single file
 8. For multiple file changes, use separate diff blocks
+9. NEVER omit the space prefix on context lines - this causes parsing errors
 
 For new files, use this format:
 ```diff

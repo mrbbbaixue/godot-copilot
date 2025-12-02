@@ -112,9 +112,7 @@ static func apply_diff(original_code: String, diff_text: String) -> Dictionary:
 				elif content_line.is_empty():
 					# Empty line in diff - treat as empty context line
 					hunk_operations.append({"type": "context", "content": ""})
-				else:
-					# Lines without prefix (AI sometimes omits space prefix) - treat as context
-					hunk_operations.append({"type": "context", "content": content_line})
+				# Ignore lines without recognized prefix to avoid mismatches
 				
 				i += 1
 			
