@@ -1,8 +1,8 @@
 @tool
 extends EditorPlugin
 
-const CopilotDock = preload("res://addons/copilot/copilot_dock.gd")
-const SettingsDialog = preload("res://addons/copilot/settings_dialog.gd")
+const CopilotDock = preload("res://addons/copilot/scripts/copilot_dock.gd")
+const SettingsDialog = preload("res://addons/copilot/scripts/settings_dialog.gd")
 
 var dock: Control
 var settings_dialog: AcceptDialog

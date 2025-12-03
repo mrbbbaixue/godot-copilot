@@ -3,8 +3,8 @@ extends PanelContainer
 
 ## A reusable chat message component with improved visual styling
 
-const MarkdownParser = preload("markdown_parser.gd")
-const DiffUtils = preload("diff_utils.gd")
+const MarkdownParser = preload("res://addons/copilot/scripts/markdown_parser.gd")
+const DiffUtils = preload("res://addons/copilot/scripts/diff_utils.gd")
 
 signal apply_diff_requested(file_path: String, diff_text: String)
 signal apply_code_requested(file_path: String, code: String)
