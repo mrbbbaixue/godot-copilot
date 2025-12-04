@@ -5,6 +5,8 @@ extends PanelContainer
 
 const MarkdownParser = preload("res://addons/copilot/scripts/markdown_parser.gd")
 const DiffUtils = preload("res://addons/copilot/scripts/diff_utils.gd")
+const DiffButtonTemplate = preload("res://addons/copilot/scenes/diff_button_template.tscn")
+const CodeButtonTemplate = preload("res://addons/copilot/scenes/code_button_template.tscn")
 
 signal apply_diff_requested(file_path: String, diff_text: String)
 signal apply_code_requested(file_path: String, code: String)
@@ -23,80 +25,56 @@ var header_container: HBoxContainer
 var main_container: VBoxContainer
 var apply_buttons_container: VBoxContainer
 
-# Style colors
-const USER_BG_COLOR := Color(0.15, 0.25, 0.35, 0.9)       # Blue-ish for user (Claude Code style)
-const ASSISTANT_BG_COLOR := Color(0.15, 0.30, 0.20, 0.9)  # Green-ish for assistant (Claude Code style)
-const SYSTEM_BG_COLOR := Color(0.30, 0.25, 0.15, 0.9)     # Yellow-ish for system (Claude Code style)
+# State tracking
+var nodes_ready := false
+var pending_role: MessageRole = MessageRole.USER
+var pending_content := ""
 
-const USER_ACCENT_COLOR := Color(0.25, 0.55, 0.95)        # Blue accent
-const ASSISTANT_ACCENT_COLOR := Color(0.25, 0.65, 0.4)    # Green accent
-const SYSTEM_ACCENT_COLOR := Color(0.9, 0.7, 0.2)         # Orange accent
+# Style colors - using editor theme colors
+const USER_BORDER_COLOR := Color(0.25, 0.55, 0.95)        # Blue accent for user
+const ASSISTANT_BORDER_COLOR := Color(0.25, 0.65, 0.4)    # Green accent for assistant
+const SYSTEM_BORDER_COLOR := Color(0.9, 0.7, 0.2)         # Orange accent for system
 
-const USER_AVATAR := "👤"
-const ASSISTANT_AVATAR := "🤖"
-const SYSTEM_AVATAR := "⚙️"
+const USER_BG_COLOR := Color(0.25, 0.55, 0.95, 0.15)      # Blue background for user (light with transparency)
+const USER_ACCENT_COLOR := Color(0.25, 0.55, 0.95)        # Blue accent (for role label)
+const ASSISTANT_ACCENT_COLOR := Color(0.25, 0.65, 0.4)    # Green accent (for role label)
+const SYSTEM_ACCENT_COLOR := Color(0.9, 0.7, 0.2)         # Orange accent (for role label)
+
+const USER_AVATAR := ""  # No emoji
+const ASSISTANT_AVATAR := ""  # No emoji
+const SYSTEM_AVATAR := ""  # No emoji
 
 
-func _init() -> void:
-	_setup_ui()
+func _ready() -> void:
+	# Get references to scene nodes
+	main_container = $MainContainer
+	header_container = $MainContainer/HeaderContainer
+	avatar_label = $MainContainer/HeaderContainer/AvatarLabel
+	role_label = $MainContainer/HeaderContainer/RoleLabel
+	content_label = $MainContainer/ContentLabel
+	apply_buttons_container = $MainContainer/ApplyButtonsContainer
 
+	nodes_ready = true
 
-func _setup_ui() -> void:
-	# Configure panel container
-	custom_minimum_size = Vector2(0, 40)
-	size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	
-	# Create main vertical container
-	main_container = VBoxContainer.new()
-	main_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_child(main_container)
-	
-	# Header with avatar and role
-	header_container = HBoxContainer.new()
-	header_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	main_container.add_child(header_container)
-	
-	# Avatar
-	avatar_label = Label.new()
-	avatar_label.text = USER_AVATAR
-	avatar_label.add_theme_font_size_override("font_size", 18)
-	header_container.add_child(avatar_label)
-	
-	# Spacer
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(8, 0)
-	header_container.add_child(spacer)
-	
-	# Role label
-	role_label = Label.new()
-	role_label.text = "You"
-	role_label.add_theme_font_size_override("font_size", 14)
-	header_container.add_child(role_label)
-	
-	# Separator line
-	var separator := HSeparator.new()
-	separator.add_theme_constant_override("separation", 2)
-	main_container.add_child(separator)
-	
-	# Content
-	content_label = RichTextLabel.new()
-	content_label.bbcode_enabled = true
-	content_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_label.fit_content = true
-	content_label.selection_enabled = true
-	content_label.scroll_active = false
-	main_container.add_child(content_label)
-	
-	# Container for apply buttons (will be populated when content is set)
-	apply_buttons_container = VBoxContainer.new()
-	apply_buttons_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	main_container.add_child(apply_buttons_container)
-	
 	# Apply default style
 	_apply_style()
 
+	# Apply pending setup if any
+	if pending_content != "":
+		role = pending_role
+		content = pending_content
+		_apply_style()
+		_update_content()
+		pending_content = ""
+
 
 func setup(message_role: MessageRole, message_content: String) -> void:
+	if not nodes_ready:
+		# Store for when nodes are ready
+		pending_role = message_role
+		pending_content = message_content
+		return
+
 	role = message_role
 	content = message_content
 	_apply_style()
@@ -104,41 +82,54 @@ func setup(message_role: MessageRole, message_content: String) -> void:
 
 
 func _apply_style() -> void:
-	var style := StyleBoxFlat.new()
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 12
-	style.content_margin_right = 12
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	
+	# Get existing style from theme or create new one
+	var existing_style = get_theme_stylebox("panel")
+	var style: StyleBoxFlat
+	if existing_style is StyleBoxFlat:
+		style = existing_style.duplicate() as StyleBoxFlat
+	else:
+		style = StyleBoxFlat.new()
+		style.corner_radius_top_left = 8
+		style.corner_radius_top_right = 8
+		style.corner_radius_bottom_left = 8
+		style.corner_radius_bottom_right = 8
+		style.content_margin_left = 12
+		style.content_margin_right = 12
+		style.content_margin_top = 8
+		style.content_margin_bottom = 8
+
 	var accent_color: Color
-	
+	var border_color: Color
+
 	match role:
 		MessageRole.USER:
-			style.bg_color = USER_BG_COLOR
 			accent_color = USER_ACCENT_COLOR
+			border_color = USER_BORDER_COLOR
 			avatar_label.text = USER_AVATAR
 			role_label.text = "You"
+			# User messages have left border and background color
+			style.bg_color = USER_BG_COLOR
+			style.border_width_left = 3
+			style.border_color = border_color
 		MessageRole.ASSISTANT:
-			style.bg_color = ASSISTANT_BG_COLOR
 			accent_color = ASSISTANT_ACCENT_COLOR
+			border_color = ASSISTANT_BORDER_COLOR
 			avatar_label.text = ASSISTANT_AVATAR
 			role_label.text = "AI Assistant"
+			# Assistant messages have no border and transparent background
+			style.bg_color = Color.TRANSPARENT
+			style.border_width_left = 0
 		MessageRole.SYSTEM:
-			style.bg_color = SYSTEM_BG_COLOR
 			accent_color = SYSTEM_ACCENT_COLOR
+			border_color = SYSTEM_BORDER_COLOR
 			avatar_label.text = SYSTEM_AVATAR
 			role_label.text = "System"
-	
-	# Apply border on left side for visual distinction
-	style.border_width_left = 3
-	style.border_color = accent_color
-	
+			# System messages have no border and transparent background
+			style.bg_color = Color.TRANSPARENT
+			style.border_width_left = 0
+
 	add_theme_stylebox_override("panel", style)
-	
+
 	# Style the role label
 	role_label.add_theme_color_override("font_color", accent_color)
 
@@ -157,15 +148,18 @@ func _update_apply_buttons() -> void:
 	# Clear existing buttons
 	for child in apply_buttons_container.get_children():
 		child.queue_free()
-	
+
+	# Hide container by default
+	apply_buttons_container.visible = false
+
 	# Only show apply buttons for assistant messages
 	if role != MessageRole.ASSISTANT:
 		return
-	
+
 	# Extract diffs and code blocks from the content
 	var diffs := DiffUtils.extract_all_diffs(content)
 	var code_blocks := DiffUtils.extract_code_blocks_with_paths(content)
-	
+
 	# Add apply buttons for each diff
 	for diff_info in diffs:
 		var btn := _create_apply_button(
@@ -176,7 +170,7 @@ func _update_apply_buttons() -> void:
 		btn.set_meta("diff_text", diff_info["diff"])
 		btn.set_meta("is_new_file", diff_info["is_new_file"])
 		apply_buttons_container.add_child(btn)
-	
+
 	# Add apply buttons for code blocks with file paths
 	for block_info in code_blocks:
 		var btn := _create_apply_button(
@@ -187,35 +181,25 @@ func _update_apply_buttons() -> void:
 		btn.set_meta("code", block_info["code"])
 		apply_buttons_container.add_child(btn)
 
+	# Show container if we added any buttons
+	if diffs.size() > 0 or code_blocks.size() > 0:
+		apply_buttons_container.visible = true
+
 
 func _create_apply_button(text: String, file_path: String, is_diff: bool) -> Button:
-	var btn := Button.new()
+	var btn: Button
+	if is_diff:
+		btn = DiffButtonTemplate.instantiate()
+	else:
+		btn = CodeButtonTemplate.instantiate()
+
 	btn.text = text
 	btn.tooltip_text = file_path
-	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	
-	# Style the button
-	var style_box := StyleBoxFlat.new()
-	if is_diff:
-		style_box.bg_color = Color(0.15, 0.45, 0.25, 0.9)  # Green for diff (Claude Code style)
-		style_box.border_color = Color(0.25, 0.65, 0.35, 1.0)
-	else:
-		style_box.bg_color = Color(0.15, 0.35, 0.55, 0.9)  # Blue for code (Claude Code style)
-		style_box.border_color = Color(0.25, 0.55, 0.85, 1.0)
-	style_box.corner_radius_top_left = 4
-	style_box.corner_radius_top_right = 4
-	style_box.corner_radius_bottom_right = 4
-	style_box.corner_radius_bottom_left = 4
-	style_box.border_width_left = 1
-	style_box.border_width_top = 1
-	style_box.border_width_right = 1
-	style_box.border_width_bottom = 1
-	btn.add_theme_stylebox_override("normal", style_box)
-	
+
 	btn.set_meta("file_path", file_path)
 	btn.set_meta("is_diff", is_diff)
 	btn.pressed.connect(_on_apply_button_pressed.bind(btn))
-	
+
 	return btn
 
 

@@ -35,6 +35,27 @@ func _init() -> void:
 
 
 func _setup_ui() -> void:
+	# Set dock background color to editor theme dark variant
+	var bg_color := Color(0.1, 0.1, 0.1)  # Default dark gray
+	if plugin:
+		var editor_settings = plugin.get_editor_interface().get_editor_settings()
+		var base_color = editor_settings.get_setting("interface/theme/base_color")
+		if base_color is Color:
+			# Darken the base color for background
+			bg_color = base_color.darkened(0.7)
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	add_theme_stylebox_override("panel", style)
+
 	# Header with clear chat button only
 	var header := HBoxContainer.new()
 	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL

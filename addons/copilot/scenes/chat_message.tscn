@@ -1,8 +1,70 @@
-[gd_scene load_steps=2 format=3 uid="uid://b8r5m2k7vp3yx"]
+[gd_scene load_steps=3 format=3 uid="uid://b8r5m2k7vp3yx"]
 
 [ext_resource type="Script" uid="uid://cdrx6gnthv4kx" path="res://addons/copilot/scenes/chat_message.gd" id="1_chat_msg"]
+
+[sub_resource type="StyleBoxFlat" id="message_panel_style"]
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_left = 8
+corner_radius_bottom_right = 8
+content_margin_left = 12
+content_margin_right = 12
+content_margin_top = 8
+content_margin_bottom = 8
+bg_color = Color(0, 0, 0, 0)  # Transparent by default
+border_width_left = 0
+border_width_top = 0
+border_width_right = 0
+border_width_bottom = 0
 
 [node name="ChatMessage" type="PanelContainer"]
 offset_right = 300.0
 offset_bottom = 100.0
 script = ExtResource("1_chat_msg")
+theme_override_styleboxes/panel = SubResource("message_panel_style")
+
+[node name="MainContainer" type="VBoxContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+
+[node name="HeaderContainer" type="HBoxContainer" parent="MainContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="AvatarLabel" type="Label" parent="HeaderContainer"]
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = ""
+theme_override_font_sizes/font_size = 18
+
+[node name="Spacer" type="Control" parent="HeaderContainer"]
+size_flags_horizontal = 0
+size_flags_vertical = 0
+custom_minimum_size = Vector2(8, 0)
+
+[node name="RoleLabel" type="Label" parent="HeaderContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 0
+text = "You"
+theme_override_font_sizes/font_size = 14
+
+[node name="Separator" type="HSeparator" parent="MainContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_constants/separation = 2
+
+[node name="ContentLabel" type="RichTextLabel" parent="MainContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 0
+fit_content = true
+selection_enabled = true
+scroll_active = false
+bbcode_enabled = true
+
+[node name="ApplyButtonsContainer" type="VBoxContainer" parent="MainContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 0
+visible = false

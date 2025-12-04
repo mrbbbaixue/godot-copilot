@@ -1,0 +1,26 @@
+[gd_scene load_steps=2 format=3 uid="uid://apply_button_template"]
+
+[ext_resource type="Script" path="" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="diff_button_style"]
+bg_color = Color(0.15, 0.45, 0.25, 0.9)
+border_color = Color(0.25, 0.65, 0.35, 1.0)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+expand_margin_left = 2.0
+expand_margin_right = 2.0
+expand_margin_top = 2.0
+expand_margin_bottom = 2.0
+
+[node name="ApplyButton" type="Button"]
+size_flags_horizontal = 3
+size_flags_vertical = 1
+custom_minimum_size = Vector2(0, 32)
+theme_override_constants/outline_size = 0
+theme_override_styleboxes/normal = SubResource("diff_button_style")
