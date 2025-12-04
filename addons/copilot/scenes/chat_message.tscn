@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://b8r5m2k7vp3yx"]
 
-[ext_resource type="Script" uid="uid://cdrx6gnthv4kx" path="res://addons/copilot/scripts/chat_message.gd" id="1_chat_msg"]
+[ext_resource type="Script" uid="uid://cdrx6gnthv4kx" path="res://addons/copilot/scenes/chat_message.gd" id="1_chat_msg"]
 
 [node name="ChatMessage" type="PanelContainer"]
 offset_right = 300.0

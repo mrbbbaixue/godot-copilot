@@ -4,7 +4,7 @@ extends VBoxContainer
 const LLMClient = preload("res://addons/copilot/scripts/llm_client.gd")
 const MarkdownParser = preload("res://addons/copilot/scripts/markdown_parser.gd")
 const DiffUtils = preload("res://addons/copilot/scripts/diff_utils.gd")
-const ChatMessage = preload("res://addons/copilot/scripts/chat_message.gd")
+const ChatMessage = preload("res://addons/copilot/scenes/chat_message.gd")
 const InputBox = preload("res://addons/copilot/scenes/input_box.tscn")
 
 var plugin: EditorPlugin
@@ -282,6 +282,8 @@ func _on_llm_chunk(chunk: String) -> void:
 	if streaming_message == null:
 		streaming_message = ChatMessage.new()
 		streaming_message.setup(ChatMessage.MessageRole.ASSISTANT, current_response)
+		streaming_message.apply_diff_requested.connect(_on_apply_diff_to_file)
+		streaming_message.apply_code_requested.connect(_on_apply_code_to_file)
 		chat_container.add_child(streaming_message)
 	else:
 		streaming_message.set_streaming_content(current_response)

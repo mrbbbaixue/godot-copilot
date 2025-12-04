@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(git show:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(mv:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
