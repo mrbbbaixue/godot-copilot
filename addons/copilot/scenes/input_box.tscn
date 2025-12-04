@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dg8w7v6k9m4n1"]
 
-[ext_resource type="Script" uid="uid://c4s9t2m5p8q1r" path="res://addons/copilot/scripts/input_box.gd" id="1_input_box"]
+[ext_resource type="Script" uid="uid://d2cm41tmo5yfr" path="res://addons/copilot/scripts/input_box.gd" id="1_input_box"]
 
 [sub_resource type="StyleBoxFlat" id="2_input_box_panel_style"]
 bg_color = Color(0.1, 0.1, 0.1, 0.8)
@@ -8,7 +8,7 @@ border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0.3, 0.3, 0.3)
+border_color = Color(0.3, 0.3, 0.3, 1.0)
 corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
@@ -37,7 +37,7 @@ corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
 [sub_resource type="StyleBoxFlat" id="7_send_button_style"]
-bg_color = Color(0.2, 0.6, 1.0)
+bg_color = Color(0.2, 0.6, 1.0, 1.0)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
@@ -140,6 +140,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 offset_right = 0.0
 offset_bottom = 0.0
-custom_minimum_size = Vector2(60, 32)
+custom_minimum_size = Vector2(80, 32)
 text = "Send"
 theme_override_styles/normal = SubResource("7_send_button_style")

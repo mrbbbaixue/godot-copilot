@@ -66,7 +66,10 @@ func _on_stop_button_pressed() -> void:
 
 func _on_input_field_gui_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
-		# Ctrl+Enter or Cmd+Enter to send message
-		if (event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER) and (event.ctrl_pressed or event.meta_pressed):
-			_on_send_button_pressed()
-			get_viewport().set_input_as_handled()
+		# Enter or keypad Enter
+		if event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
+			# Shift+Enter for newline, otherwise send (including Ctrl+Enter/Cmd+Enter for backward compatibility)
+			if not event.shift_pressed:
+				_on_send_button_pressed()
+				get_viewport().set_input_as_handled()
+				event.accept_event()
