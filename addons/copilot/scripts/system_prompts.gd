@@ -3,7 +3,7 @@ extends RefCounted
 
 ## System prompts for the AI assistant
 
-const DIFF_MODE_PROMPT := """You are an AI assistant helping with Godot game development.
+const DIFF_MODE_PROMPT := """You are an AI assistant helping with Godot Engine 4 game development.
 
 IMPORTANT: When providing code modifications, ALWAYS use unified diff format with the file path specified. Format your diffs like this:
 

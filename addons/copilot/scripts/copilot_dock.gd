@@ -298,17 +298,74 @@ func _on_llm_error(message: String) -> void:
 func _on_llm_finished(full_response: String) -> void:
 	if input_box:
 		input_box.is_streaming = false
-	
+
 	if not full_response.is_empty():
 		current_response = full_response
 		messages.append({"role": "assistant", "content": full_response})
-		
+
 		# Update the streaming message with final content and connect signals
 		if streaming_message:
 			streaming_message.set_streaming_content(full_response)
 			streaming_message.apply_diff_requested.connect(_on_apply_diff_to_file)
 			streaming_message.apply_code_requested.connect(_on_apply_code_to_file)
+
+			# Auto-apply changes if enabled
+			if plugin and plugin.get_setting("mode", "auto_apply_mode"):
+				_auto_apply_changes(full_response)
 	else:
 		_add_system_message("Empty response from AI.")
 
 	streaming_message = null
+
+
+## Auto-apply changes from AI response when auto-apply mode is enabled
+func _auto_apply_changes(content: String) -> void:
+	if not plugin:
+		return
+
+	# Extract diffs and code blocks from the content
+	var diffs := DiffUtils.extract_all_diffs(content)
+	var code_blocks := DiffUtils.extract_code_blocks_with_paths(content)
+
+	# Apply all diffs
+	for diff_info: Dictionary in diffs:
+		var file_path: String = diff_info["path"]
+		var diff_text: String = diff_info["diff"]
+		var is_new_file: bool = diff_info["is_new_file"]
+
+		# Read original file content (if not a new file)
+		var original_content := ""
+		if not is_new_file:
+			original_content = plugin.read_file_content(file_path)
+			if original_content.is_empty():
+				_add_system_message("⚠ Skipping diff for %s (cannot read file)" % file_path)
+				continue
+
+		# Apply the diff
+		var result := DiffUtils.apply_diff(original_content, diff_text)
+
+		if result["success"]:
+			# Write the modified content back to the file
+			if plugin.write_file_content(file_path, result["code"]):
+				_add_system_message("✅ Auto-applied diff to %s" % file_path)
+				# If this is the current open script, also update the editor
+				if file_path == current_script_path or file_path == plugin.get_current_script_path():
+					plugin.set_current_code(result["code"])
+			else:
+				_add_system_message("❌ Failed to write to file: %s" % file_path)
+		else:
+			_add_system_message("❌ Failed to auto-apply diff to %s: %s" % [file_path, result["error"]])
+
+	# Apply all code blocks
+	for block_info: Dictionary in code_blocks:
+		var file_path: String = block_info["path"]
+		var code: String = block_info["code"]
+
+		# Write the code to the file
+		if plugin.write_file_content(file_path, code):
+			_add_system_message("✅ Auto-applied code to %s" % file_path)
+			# If this is the current open script, also update the editor
+			if file_path == current_script_path or file_path == plugin.get_current_script_path():
+				plugin.set_current_code(code)
+		else:
+			_add_system_message("❌ Failed to write to file: %s" % file_path)

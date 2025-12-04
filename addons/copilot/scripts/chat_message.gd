@@ -24,13 +24,13 @@ var main_container: VBoxContainer
 var apply_buttons_container: VBoxContainer
 
 # Style colors
-const USER_BG_COLOR := Color(0.15, 0.25, 0.35, 0.8)       # Blue-ish for user
-const ASSISTANT_BG_COLOR := Color(0.15, 0.30, 0.20, 0.8)  # Green-ish for assistant
-const SYSTEM_BG_COLOR := Color(0.30, 0.25, 0.15, 0.8)     # Yellow-ish for system
+const USER_BG_COLOR := Color(0.15, 0.25, 0.35, 0.9)       # Blue-ish for user (Claude Code style)
+const ASSISTANT_BG_COLOR := Color(0.15, 0.30, 0.20, 0.9)  # Green-ish for assistant (Claude Code style)
+const SYSTEM_BG_COLOR := Color(0.30, 0.25, 0.15, 0.9)     # Yellow-ish for system (Claude Code style)
 
-const USER_ACCENT_COLOR := Color(0.4, 0.7, 1.0)           # Cyan
-const ASSISTANT_ACCENT_COLOR := Color(0.4, 0.8, 0.5)      # Green
-const SYSTEM_ACCENT_COLOR := Color(1.0, 0.85, 0.4)        # Yellow
+const USER_ACCENT_COLOR := Color(0.25, 0.55, 0.95)        # Blue accent
+const ASSISTANT_ACCENT_COLOR := Color(0.25, 0.65, 0.4)    # Green accent
+const SYSTEM_ACCENT_COLOR := Color(0.9, 0.7, 0.2)         # Orange accent
 
 const USER_AVATAR := "👤"
 const ASSISTANT_AVATAR := "🤖"
@@ -197,13 +197,19 @@ func _create_apply_button(text: String, file_path: String, is_diff: bool) -> But
 	# Style the button
 	var style_box := StyleBoxFlat.new()
 	if is_diff:
-		style_box.bg_color = Color(0.2, 0.5, 0.3, 0.8)  # Green for diff
+		style_box.bg_color = Color(0.15, 0.45, 0.25, 0.9)  # Green for diff (Claude Code style)
+		style_box.border_color = Color(0.25, 0.65, 0.35, 1.0)
 	else:
-		style_box.bg_color = Color(0.2, 0.4, 0.6, 0.8)  # Blue for code
+		style_box.bg_color = Color(0.15, 0.35, 0.55, 0.9)  # Blue for code (Claude Code style)
+		style_box.border_color = Color(0.25, 0.55, 0.85, 1.0)
 	style_box.corner_radius_top_left = 4
 	style_box.corner_radius_top_right = 4
 	style_box.corner_radius_bottom_right = 4
 	style_box.corner_radius_bottom_left = 4
+	style_box.border_width_left = 1
+	style_box.border_width_top = 1
+	style_box.border_width_right = 1
+	style_box.border_width_bottom = 1
 	btn.add_theme_stylebox_override("normal", style_box)
 	
 	btn.set_meta("file_path", file_path)

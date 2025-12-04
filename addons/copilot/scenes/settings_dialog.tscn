@@ -1,0 +1,151 @@
+[gd_scene format=3 uid="uid://replace_with_new_uid"]
+
+[ext_resource type="Script" path="res://addons/copilot/scripts/settings_dialog.gd" id="1_settings_dialog"]
+
+[node name="SettingsDialog" type="AcceptDialog"]
+script = ExtResource("1_settings_dialog")
+title = "Godot Copilot Settings"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -20.0
+offset_bottom = -20.0
+offset_left = 20.0
+offset_top = 20.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="UrlLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+text = "API Base URL:"
+
+[node name="BaseUrlInput" type="LineEdit" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+placeholder_text = "https://api.openai.com/v1"
+size_flags_horizontal = 3
+
+[node name="Spacer1" type="Control" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+custom_minimum_size = Vector2(0, 10)
+
+[node name="KeyLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+text = "API Key:"
+
+[node name="ApiKeyInput" type="LineEdit" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+placeholder_text = "sk-..."
+secret = true
+size_flags_horizontal = 3
+
+[node name="Spacer2" type="Control" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+custom_minimum_size = Vector2(0, 10)
+
+[node name="ModelLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+text = "Model Name:"
+
+[node name="ModelInput" type="LineEdit" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+placeholder_text = "gpt-4o"
+size_flags_horizontal = 3
+
+[node name="Spacer3" type="Control" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+custom_minimum_size = Vector2(0, 10)
+
+[node name="FullCodeModeCheckbox" type="CheckBox" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+text = "Traditional Full Text Mode"
+tooltip_text = "When enabled, AI outputs complete code blocks instead of diff format (uses more tokens)"
+
+[node name="Spacer4" type="Control" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+custom_minimum_size = Vector2(0, 10)
+
+[node name="AutoApplyModeCheckbox" type="CheckBox" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+text = "Auto-apply Changes"
+tooltip_text = "When enabled, AI suggestions are automatically applied without requiring manual confirmation"
+
+[node name="Spacer5" type="Control" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+custom_minimum_size = Vector2(0, 10)
+
+[node name="HelpLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+text = "You can use any OpenAI-compatible API endpoint."
