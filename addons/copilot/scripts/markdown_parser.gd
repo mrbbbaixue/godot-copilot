@@ -47,10 +47,8 @@ static func parse(text: String) -> String:
 		# Process code block based on language
 		if language == "diff":
 			parts.append(_format_diff_block(code_content))
-		elif language == "gdscript" or language == "gd":
-			parts.append(_format_gdscript_block(code_content))
 		else:
-			parts.append(_format_code_block(code_content, language))
+			parts.append(_format_plain_code_block(code_content, language))
 		
 		current_pos = end
 	
@@ -66,35 +64,8 @@ static func _process_markdown(text: String) -> String:
 	# Escape BBCode tags
 	result = result.replace("[", "[lb]")
 	result = result.replace("]", "[rb]")
-	
-	# Bold **text**
-	var bold = RegEx.new()
-	bold.compile("\\*\\*(.*?)\\*\\*")
-	result = bold.sub(result, "[b]$1[/b]", true)
-	
-	# Italic *text*
-	var italic = RegEx.new()
-	italic.compile("(?<!\\*)\\*(?!\\*)([^*]+)(?<!\\*)\\*(?!\\*)")
-	result = italic.sub(result, "[i]$1[/i]", true)
-	
-	# Inline code `text`
-	var inline_code = RegEx.new()
-	inline_code.compile("`([^`]+)`")
-	result = inline_code.sub(result, "[bgcolor=#2d2d3d][code]$1[/code][/bgcolor]", true)
-	
-	# Headers
-	var h3 = RegEx.new()
-	h3.compile("^### (.+)$")
-	result = h3.sub(result, "[b][color=#82aaff]$1[/color][/b]", true)
-	
-	var h2 = RegEx.new()
-	h2.compile("^## (.+)$")
-	result = h2.sub(result, "[b][font_size=18][color=#82aaff]$1[/color][/font_size][/b]", true)
-	
-	var h1 = RegEx.new()
-	h1.compile("^# (.+)$")
-	result = h1.sub(result, "[b][font_size=20][color=#82aaff]$1[/color][/font_size][/b]", true)
-	
+
+	# Remove all other Markdown formatting - only escape BBCode tags
 	return result
 
 
@@ -115,6 +86,11 @@ static func _format_gdscript_block(code: String) -> String:
 	
 	var highlighted = "\n".join(result_lines)
 	return "\n[bgcolor=#1e1e2e][color=#6b7280][i]gdscript[/i][/color]\n" + highlighted + "[/bgcolor]\n"
+
+
+static func _format_plain_code_block(code: String, language: String = "") -> String:
+	var escaped = code.replace("[", "[lb]").replace("]", "[rb]")
+	return "\n[bgcolor=#1e1e2e][code]" + escaped + "[/code][/bgcolor]\n"
 
 
 static func _highlight_gdscript_line(line: String) -> String:
