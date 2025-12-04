@@ -1,0 +1,160 @@
+[gd_scene format=3 uid="uid://dg8w7v6k9m4n1"]
+
+[ext_resource type="Script" uid="uid://d2cm41tmo5yfr" path="res://addons/copilot/scripts/input_box.gd" id="1_input_box"]
+
+[sub_resource type="StyleBoxFlat" id="2_input_box_panel_style"]
+bg_color = Color(0.125, 0.125, 0.125, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.25, 0.25, 0.25, 1.0)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 12
+content_margin_right = 12
+content_margin_top = 12
+content_margin_bottom = 12
+
+[sub_resource type="StyleBoxEmpty" id="3_textedit_normal_style"]
+
+[sub_resource type="StyleBoxEmpty" id="4_textedit_focus_style"]
+
+[sub_resource type="StyleBoxFlat" id="5_settings_button_style"]
+bg_color = Color(0.25, 0.25, 0.25, 0.9)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.35, 0.35, 1.0)
+
+[sub_resource type="StyleBoxFlat" id="6_stop_button_style"]
+bg_color = Color(0.55, 0.15, 0.15, 0.9)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.7, 0.25, 0.25, 1.0)
+
+[sub_resource type="StyleBoxFlat" id="7_send_button_style"]
+bg_color = Color(0.15, 0.45, 0.85, 1.0)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.25, 0.55, 0.95, 1.0)
+
+[node name="InputBox" type="PanelContainer"]
+script = ExtResource("1_input_box")
+custom_minimum_size = Vector2(0, 100)
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("2_input_box_panel_style")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -16.0
+offset_bottom = -16.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TextEdit" type="TextEdit" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+placeholder_text = "Type your message... (current context is auto-included)"
+wrap_mode = 1
+theme_override_styles/normal = SubResource("3_textedit_normal_style")
+theme_override_styles/focus = SubResource("4_textedit_focus_style")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+size_flags_horizontal = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+alignment = 0
+
+[node name="SettingsButton" type="Button" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -32.0
+offset_bottom = -32.0
+custom_minimum_size = Vector2(32, 32)
+text = "⚙"
+tooltip_text = "Settings"
+theme_override_styles/normal = SubResource("5_settings_button_style")
+
+[node name="Control" type="Control" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+size_flags_horizontal = 3
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+alignment = 2
+
+[node name="StopButton" type="Button" parent="VBoxContainer/HBoxContainer/HBoxContainer2"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -60.0
+offset_bottom = -32.0
+custom_minimum_size = Vector2(60, 32)
+visible = false
+text = "Stop"
+theme_override_styles/normal = SubResource("6_stop_button_style")
+
+[node name="SendButton" type="Button" parent="VBoxContainer/HBoxContainer/HBoxContainer2"]
+layout_mode = 1
+anchors_preset = 7
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+custom_minimum_size = Vector2(80, 32)
+text = "Send"
+theme_override_styles/normal = SubResource("7_send_button_style")

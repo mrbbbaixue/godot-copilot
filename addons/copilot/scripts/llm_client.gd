@@ -1,7 +1,7 @@
 @tool
 extends RefCounted
 
-const SystemPrompts = preload("system_prompts.gd")
+const SystemPrompts = preload("res://addons/copilot/scripts/system_prompts.gd")
 
 signal chunk_received(chunk: String)
 signal error_occurred(message: String)

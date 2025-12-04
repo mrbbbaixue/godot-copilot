@@ -1,8 +1,8 @@
 @tool
 extends EditorPlugin
 
-const CopilotDock = preload("res://addons/copilot/copilot_dock.gd")
-const SettingsDialog = preload("res://addons/copilot/settings_dialog.gd")
+const CopilotDock = preload("res://addons/copilot/scripts/copilot_dock.gd")
+const SettingsDialogScene = preload("res://addons/copilot/scenes/settings_dialog.tscn")
 
 var dock: Control
 var settings_dialog: AcceptDialog
@@ -23,7 +23,7 @@ func _enter_tree() -> void:
 	add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock)
 	
 	# Create settings dialog
-	settings_dialog = SettingsDialog.new()
+	settings_dialog = SettingsDialogScene.instantiate()
 	settings_dialog.plugin = self
 	get_editor_interface().get_base_control().add_child(settings_dialog)
 
@@ -48,13 +48,18 @@ func _load_config() -> void:
 		config.set_value("api", "api_key", "")
 		config.set_value("api", "model", "gpt-4o")
 		config.set_value("mode", "full_code_mode", false)  # Default: diff mode (not full code)
+		config.set_value("mode", "auto_apply_mode", false)  # Default: manual apply mode
 		config.save(config_path)
 
 
 func get_setting(section: String, key: String) -> Variant:
 	var default_value: Variant = ""
-	if section == "mode" and key == "full_code_mode":
-		default_value = false
+	if section == "mode":
+		match key:
+			"full_code_mode":
+				default_value = false
+			"auto_apply_mode":
+				default_value = false
 	return config.get_value(section, key, default_value)
 
 
