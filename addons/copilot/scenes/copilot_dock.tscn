@@ -1,0 +1,55 @@
+[gd_scene load_steps=5 format=3 uid="uid://copilot_dock"]
+
+[ext_resource type="Script" uid="uid://copilot_dock_script" path="res://addons/copilot/scenes/copilot_dock.gd" id="1_copilot_dock"]
+[ext_resource type="PackedScene" uid="uid://input_box_scene" path="res://addons/copilot/scenes/input_box.tscn" id="2_input_box"]
+
+[sub_resource type="StyleBoxFlat" id="3_dock_background"]
+bg_color = Color(0.1, 0.1, 0.1)  # Default dark gray, will be overridden in script
+content_margin_left = 8
+content_margin_right = 8
+content_margin_top = 8
+content_margin_bottom = 8
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+
+[node name="CopilotDock" type="VBoxContainer"]
+custom_minimum_size = Vector2(300, 400)
+script = ExtResource("1_copilot_dock")
+theme_override_styleboxes/panel = SubResource("3_dock_background")
+
+[node name="Header" type="HBoxContainer" parent="."]
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="Spacer" type="Control" parent="Header"]
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="ClearButton" type="Button" parent="Header"]
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = "🗑"
+tooltip_text = "Clear chat"
+
+[node name="MainSplitContainer" type="VSplitContainer" parent="."]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ChatScrollContainer" type="ScrollContainer" parent="MainSplitContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 200)
+horizontal_scroll_mode = 2  # SCROLL_MODE_DISABLED
+
+[node name="ChatContainer" type="VBoxContainer" parent="MainSplitContainer/ChatScrollContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="InputBoxInstance" type="Control" parent="MainSplitContainer"]
+instance = ExtResource("2_input_box")
+size_flags_horizontal = 3
+size_flags_vertical = 0
+custom_minimum_size = Vector2(0, 100)

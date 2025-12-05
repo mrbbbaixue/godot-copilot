@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
 
-const CopilotDock = preload("res://addons/copilot/scripts/copilot_dock.gd")
+const CopilotDockScene = preload("res://addons/copilot/scenes/copilot_dock.tscn")
 const SettingsDialogScene = preload("res://addons/copilot/scenes/settings_dialog.tscn")
 
 var dock: Control
@@ -17,7 +17,7 @@ func _enter_tree() -> void:
 	_load_config()
 	
 	# Create and add the dock to the right side
-	dock = CopilotDock.new()
+	dock = CopilotDockScene.instantiate()
 	dock.name = "Copilot"
 	dock.plugin = self
 	add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock)
