@@ -5,8 +5,8 @@ class_name ChatManager
 const ChatMessageScene = preload("res://addons/copilot/scenes/chat_message.tscn")
 const ChatMessage = preload("res://addons/copilot/scenes/chat_message.gd")
 
-# Message role enum (mirrors ChatMessage.MessageRole for decoupling)
-enum MessageRole { USER, ASSISTANT, SYSTEM }
+# Use ChatMessage's MessageRole enum
+const MessageRole = ChatMessage.MessageRole
 
 signal message_added(role: MessageRole, content: String)
 signal chat_cleared
@@ -92,9 +92,11 @@ func _update_streaming_message(content: String, role: MessageRole = MessageRole.
 
 func _scroll_to_bottom() -> void:
 	# Delay scroll to allow layout to update
-	await get_tree().process_frame
 	if chat_scroll:
-		chat_scroll.scroll_vertical = int(chat_scroll.get_v_scroll_bar().max_value)
+		var tree = chat_scroll.get_tree()
+		if tree:
+			await tree.process_frame
+			chat_scroll.scroll_vertical = int(chat_scroll.get_v_scroll_bar().max_value)
 
 func _on_clear_pressed() -> void:
 	clear_display()

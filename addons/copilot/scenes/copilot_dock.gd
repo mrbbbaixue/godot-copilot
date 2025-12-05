@@ -40,7 +40,7 @@ func _init() -> void:
 func _ready() -> void:
 	## Initialize the dock when added to scene tree
 	# Get scene references
-	input_box = $MainSplitContainer/InputBoxInstance
+	input_box = $MainSplitContainer/InputBox
 
 	# Initialize components
 	_initialize_components()

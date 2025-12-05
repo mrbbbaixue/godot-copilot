@@ -1,134 +1,75 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3 uid="uid://cw8ewjgg746kn"]
 
-[ext_resource type="Script" path="res://addons/copilot/scenes/settings_dialog.gd" id="1_settings_dialog"]
+[ext_resource type="Script" uid="uid://bwvha11ylhd0e" path="res://addons/copilot/scenes/settings_dialog.gd" id="1_settings_dialog"]
 
 [node name="SettingsDialog" type="AcceptDialog"]
-script = ExtResource("1_settings_dialog")
+oversampling_override = 1.0
 title = "Godot Copilot Settings"
+size = Vector2i(402, 357)
+script = ExtResource("1_settings_dialog")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
-layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = -20.0
-offset_bottom = -20.0
-offset_left = 20.0
-offset_top = 20.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -49.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="UrlLabel" type="Label" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
+layout_mode = 2
 text = "API Base URL:"
 
 [node name="BaseUrlInput" type="LineEdit" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
-placeholder_text = "https://api.openai.com/v1"
+layout_mode = 2
 size_flags_horizontal = 3
+placeholder_text = "https://api.openai.com/v1"
 
 [node name="Spacer1" type="Control" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
 
 [node name="KeyLabel" type="Label" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
+layout_mode = 2
 text = "API Key:"
 
 [node name="ApiKeyInput" type="LineEdit" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
+layout_mode = 2
+size_flags_horizontal = 3
 placeholder_text = "sk-..."
 secret = true
-size_flags_horizontal = 3
 
 [node name="Spacer2" type="Control" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
 
 [node name="ModelLabel" type="Label" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
+layout_mode = 2
 text = "Model Name:"
 
 [node name="ModelInput" type="LineEdit" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
-placeholder_text = "gpt-4o"
+layout_mode = 2
 size_flags_horizontal = 3
+placeholder_text = "gpt-4o"
 
 [node name="Spacer3" type="Control" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 10)
-
-
+layout_mode = 2
 
 [node name="AutoApplyModeCheckbox" type="CheckBox" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
-text = "Auto-apply Changes"
+layout_mode = 2
 tooltip_text = "When enabled, AI suggestions are automatically applied without requiring manual confirmation"
+text = "Auto-apply Changes"
 
 [node name="Spacer5" type="Control" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
 
 [node name="HelpLabel" type="Label" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
+layout_mode = 2
 text = "You can use any OpenAI-compatible API endpoint."
