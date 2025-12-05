@@ -26,6 +26,7 @@ layout_mode = 2
 text = "API Base URL:"
 
 [node name="BaseUrlInput" type="LineEdit" parent="VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "https://api.openai.com/v1"
@@ -39,6 +40,7 @@ layout_mode = 2
 text = "API Key:"
 
 [node name="ApiKeyInput" type="LineEdit" parent="VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "sk-..."
@@ -53,6 +55,7 @@ layout_mode = 2
 text = "Model Name:"
 
 [node name="ModelInput" type="LineEdit" parent="VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "gpt-4o"
@@ -62,6 +65,7 @@ custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
 [node name="AutoApplyModeCheckbox" type="CheckBox" parent="VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "When enabled, AI suggestions are automatically applied without requiring manual confirmation"
 text = "Auto-apply Changes"
@@ -71,5 +75,6 @@ custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
 [node name="HelpLabel" type="Label" parent="VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "You can use any OpenAI-compatible API endpoint."
