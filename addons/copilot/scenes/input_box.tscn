@@ -23,7 +23,7 @@ corner_radius_bottom_left = 8
 [sub_resource type="StyleBoxEmpty" id="4_textedit_focus_style"]
 
 [node name="InputBox" type="PanelContainer"]
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 180)
 size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("2_input_box_panel_style")
 script = ExtResource("1_input_box")
