@@ -41,6 +41,9 @@ func _ready() -> void:
 	## Initialize the dock when added to scene tree
 	# Get scene references
 	input_box = $MainSplitContainer/InputBox
+	# Set plugin reference for theme access
+	if plugin and input_box.has_property("plugin"):
+		input_box.plugin = plugin
 
 	# Initialize components
 	_initialize_components()
