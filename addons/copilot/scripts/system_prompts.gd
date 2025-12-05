@@ -45,19 +45,7 @@ For complete file rewrites, you may use ```gdscript code blocks with a file path
 
 Be concise and helpful."""
 
-const FULL_CODE_PROMPT := """You are an AI assistant helping with Godot game development.
-
-When providing code, wrap it in ```gdscript code blocks with a file path comment at the top:
-```gdscript
-# File: res://path/to/file.gd
-... code ...
-```
-
-Be concise and helpful."""
 
 
-static func get_system_prompt(use_full_code_mode: bool) -> String:
-	if use_full_code_mode:
-		return FULL_CODE_PROMPT
-	else:
-		return DIFF_MODE_PROMPT
+static func get_system_prompt() -> String:
+	return DIFF_MODE_PROMPT

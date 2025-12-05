@@ -1,8 +1,6 @@
 @tool
 extends RefCounted
 
-const SystemPrompts = preload("res://addons/copilot/scripts/system_prompts.gd")
-
 signal chunk_received(chunk: String)
 signal error_occurred(message: String)
 signal request_finished(full_response: String)
@@ -15,7 +13,7 @@ var _is_streaming := false
 func _init() -> void:
 	_mutex = Mutex.new()
 
-func start_stream(base_url: String, api_key: String, model: String, messages: Array, use_full_code_mode: bool = false) -> void:
+func start_stream(base_url: String, api_key: String, model: String, messages: Array, system_prompt: String = "") -> void:
 	if _is_streaming:
 		return
 	
@@ -27,7 +25,7 @@ func start_stream(base_url: String, api_key: String, model: String, messages: Ar
 		"api_key": api_key,
 		"model": model,
 		"messages": messages.duplicate(true),
-		"use_full_code_mode": use_full_code_mode
+		"system_prompt": system_prompt
 	}
 	
 	_thread = Thread.new()
@@ -48,7 +46,7 @@ func _stream_request_thread(request_data: Dictionary) -> void:
 	var api_key: String = request_data["api_key"]
 	var model: String = request_data["model"]
 	var chat_messages: Array = request_data["messages"]
-	var use_full_code_mode: bool = request_data.get("use_full_code_mode", false)
+	var system_prompt: String = request_data.get("system_prompt", "")
 	
 	# Parse URL
 	var url := base_url.trim_suffix("/") + "/chat/completions"
@@ -90,15 +88,14 @@ func _stream_request_thread(request_data: Dictionary) -> void:
 		call_deferred("_emit_error", "Connection failed: " + str(http.get_status()))
 		return
 	
-	# Prepare request - use system prompts from separate file
-	var system_content := SystemPrompts.get_system_prompt(use_full_code_mode)
-	
-	var system_message := {
-		"role": "system",
-		"content": system_content
-	}
-	
-	var request_messages := [system_message]
+	# Prepare request - use provided system prompt (or none if empty)
+	var request_messages := []
+	if not system_prompt.is_empty():
+		var system_message := {
+			"role": "system",
+			"content": system_prompt
+		}
+		request_messages.append(system_message)
 	for msg in chat_messages:
 		request_messages.append({"role": msg["role"], "content": msg["content"]})
 	

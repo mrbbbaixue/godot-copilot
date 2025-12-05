@@ -47,7 +47,6 @@ func _load_config() -> void:
 		config.set_value("api", "base_url", "https://api.openai.com/v1")
 		config.set_value("api", "api_key", "")
 		config.set_value("api", "model", "gpt-4o")
-		config.set_value("mode", "full_code_mode", false)  # Default: diff mode (not full code)
 		config.set_value("mode", "auto_apply_mode", false)  # Default: manual apply mode
 		config.save(config_path)
 
@@ -56,8 +55,6 @@ func get_setting(section: String, key: String) -> Variant:
 	var default_value: Variant = ""
 	if section == "mode":
 		match key:
-			"full_code_mode":
-				default_value = false
 			"auto_apply_mode":
 				default_value = false
 	return config.get_value(section, key, default_value)

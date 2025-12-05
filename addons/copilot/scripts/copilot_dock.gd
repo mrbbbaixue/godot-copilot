@@ -4,6 +4,7 @@ extends VBoxContainer
 const LLMClient = preload("res://addons/copilot/scripts/llm_client.gd")
 const MarkdownParser = preload("res://addons/copilot/scripts/markdown_parser.gd")
 const DiffUtils = preload("res://addons/copilot/scripts/diff_utils.gd")
+const SystemPrompts = preload("res://addons/copilot/scripts/system_prompts.gd")
 const ChatMessageScene = preload("res://addons/copilot/scenes/chat_message.tscn")
 const ChatMessage = preload("res://addons/copilot/scenes/chat_message.gd")
 const InputBox = preload("res://addons/copilot/scenes/input_box.tscn")
@@ -283,7 +284,7 @@ func _send_to_api() -> void:
 	var base_url: String = plugin.get_setting("api", "base_url")
 	var api_key: String = plugin.get_setting("api", "api_key")
 	var model: String = plugin.get_setting("api", "model")
-	var use_full_code_mode: bool = plugin.get_setting("mode", "full_code_mode")
+	var system_prompt: String = SystemPrompts.get_system_prompt()
 	
 	if api_key.is_empty():
 		_add_system_message("API key not configured. Please go to Settings.")
@@ -294,7 +295,7 @@ func _send_to_api() -> void:
 		input_box.is_streaming = true
 	
 	current_response = ""
-	llm_client.start_stream(base_url, api_key, model, messages, use_full_code_mode)
+	llm_client.start_stream(base_url, api_key, model, messages, system_prompt)
 
 
 func _on_llm_chunk(chunk: String) -> void:

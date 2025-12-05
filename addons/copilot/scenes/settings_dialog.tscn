@@ -103,24 +103,7 @@ offset_right = 0.0
 offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 10)
 
-[node name="FullCodeModeCheckbox" type="CheckBox" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
-text = "Traditional Full Text Mode"
-tooltip_text = "When enabled, AI outputs complete code blocks instead of diff format (uses more tokens)"
 
-[node name="Spacer4" type="Control" parent="VBoxContainer"]
-layout_mode = 1
-anchors_preset = 7
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
-custom_minimum_size = Vector2(0, 10)
 
 [node name="AutoApplyModeCheckbox" type="CheckBox" parent="VBoxContainer"]
 layout_mode = 1

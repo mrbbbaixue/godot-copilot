@@ -7,7 +7,6 @@ var plugin: EditorPlugin
 @onready var base_url_input: LineEdit = %BaseUrlInput
 @onready var api_key_input: LineEdit = %ApiKeyInput
 @onready var model_input: LineEdit = %ModelInput
-@onready var full_code_mode_checkbox: CheckBox = %FullCodeModeCheckbox
 @onready var auto_apply_mode_checkbox: CheckBox = %AutoApplyModeCheckbox
 @onready var help_label: Label = %HelpLabel
 
@@ -30,7 +29,6 @@ func _on_about_to_popup() -> void:
 		base_url_input.text = plugin.get_setting("api", "base_url")
 		api_key_input.text = plugin.get_setting("api", "api_key")
 		model_input.text = plugin.get_setting("api", "model")
-		full_code_mode_checkbox.button_pressed = plugin.get_setting("mode", "full_code_mode")
 		auto_apply_mode_checkbox.button_pressed = plugin.get_setting("mode", "auto_apply_mode")
 
 
@@ -39,5 +37,4 @@ func _on_confirmed() -> void:
 		plugin.set_setting("api", "base_url", base_url_input.text)
 		plugin.set_setting("api", "api_key", api_key_input.text)
 		plugin.set_setting("api", "model", model_input.text)
-		plugin.set_setting("mode", "full_code_mode", full_code_mode_checkbox.button_pressed)
 		plugin.set_setting("mode", "auto_apply_mode", auto_apply_mode_checkbox.button_pressed)
