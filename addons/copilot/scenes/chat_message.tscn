@@ -34,18 +34,18 @@ theme_override_constants/separation = 4
 size_flags_horizontal = 3
 size_flags_vertical = 0
 
-[node name="AvatarLabel" type="Label" parent="HeaderContainer"]
+[node name="AvatarLabel" type="Label" parent="MainContainer/HeaderContainer"]
 size_flags_horizontal = 0
 size_flags_vertical = 0
 text = ""
 theme_override_font_sizes/font_size = 18
 
-[node name="Spacer" type="Control" parent="HeaderContainer"]
+[node name="Spacer" type="Control" parent="MainContainer/HeaderContainer"]
 size_flags_horizontal = 0
 size_flags_vertical = 0
 custom_minimum_size = Vector2(8, 0)
 
-[node name="RoleLabel" type="Label" parent="HeaderContainer"]
+[node name="RoleLabel" type="Label" parent="MainContainer/HeaderContainer"]
 size_flags_horizontal = 3
 size_flags_vertical = 0
 text = "You"

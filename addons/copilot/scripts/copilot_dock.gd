@@ -4,6 +4,7 @@ extends VBoxContainer
 const LLMClient = preload("res://addons/copilot/scripts/llm_client.gd")
 const MarkdownParser = preload("res://addons/copilot/scripts/markdown_parser.gd")
 const DiffUtils = preload("res://addons/copilot/scripts/diff_utils.gd")
+const ChatMessageScene = preload("res://addons/copilot/scenes/chat_message.tscn")
 const ChatMessage = preload("res://addons/copilot/scenes/chat_message.gd")
 const InputBox = preload("res://addons/copilot/scenes/input_box.tscn")
 
@@ -211,7 +212,7 @@ func _add_system_message(content: String) -> void:
 
 
 func _add_message_widget(role: ChatMessage.MessageRole, content: String) -> void:
-	var msg_widget := ChatMessage.new()
+	var msg_widget := ChatMessageScene.instantiate()
 	msg_widget.setup(role, content)
 	
 	# Connect apply signals for assistant messages
@@ -301,7 +302,7 @@ func _on_llm_chunk(chunk: String) -> void:
 	
 	# Create or update streaming message widget
 	if streaming_message == null:
-		streaming_message = ChatMessage.new()
+		streaming_message = ChatMessageScene.instantiate()
 		streaming_message.setup(ChatMessage.MessageRole.ASSISTANT, current_response)
 		streaming_message.apply_diff_requested.connect(_on_apply_diff_to_file)
 		streaming_message.apply_code_requested.connect(_on_apply_code_to_file)

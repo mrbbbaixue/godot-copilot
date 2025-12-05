@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://replace_with_new_uid"]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://addons/copilot/scenes/settings_dialog.gd" id="1_settings_dialog"]
 
