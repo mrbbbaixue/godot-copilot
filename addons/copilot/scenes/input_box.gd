@@ -72,4 +72,3 @@ func _on_input_field_gui_input(event: InputEvent) -> void:
 			if not event.shift_pressed:
 				_on_send_button_pressed()
 				get_viewport().set_input_as_handled()
-				event.accept_event()
