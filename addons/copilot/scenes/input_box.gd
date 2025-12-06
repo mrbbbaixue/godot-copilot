@@ -50,10 +50,10 @@ func _apply_editor_theme() -> void:
 	if not Engine.is_editor_hint():
 		return
 
-	# Try to get editor theme through plugin
-	if _plugin and _plugin.has_method("get_editor_interface"):
+	# Get editor theme through plugin
+	if _plugin:
 		var editor_iface = _plugin.get_editor_interface()
-		if editor_iface and editor_iface.has_method("get_editor_theme"):
+		if editor_iface:
 			var editor_theme = editor_iface.get_editor_theme()
 			if editor_theme:
 				# Try to get TextEdit stylebox from editor theme

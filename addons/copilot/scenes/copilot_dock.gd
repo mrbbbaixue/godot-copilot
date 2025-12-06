@@ -39,10 +39,12 @@ func _init() -> void:
 
 func _ready() -> void:
 	## Initialize the dock when added to scene tree
+
 	# Get scene references
 	input_box = $MainSplitContainer/InputBox
+
 	# Set plugin reference for theme access
-	if plugin and input_box.has_property("plugin"):
+	if plugin and input_box:
 		input_box.plugin = plugin
 
 	# Initialize components
@@ -91,14 +93,16 @@ func _initialize_components() -> void:
 ## Connect all component signals
 func _setup_signal_connections() -> void:
 	# Input box signals
-	input_box.send_pressed.connect(_on_send_pressed)
-	input_box.settings_pressed.connect(_on_settings_pressed)
-	input_box.stop_pressed.connect(_on_stop_pressed)
+	if input_box:
+		input_box.send_pressed.connect(_on_send_pressed)
+		input_box.settings_pressed.connect(_on_settings_pressed)
+		input_box.stop_pressed.connect(_on_stop_pressed)
 
 	# Chat manager signals
-	chat_manager.apply_diff_requested.connect(_on_apply_diff_requested)
-	chat_manager.apply_code_requested.connect(_on_apply_code_requested)
-	chat_manager.chat_cleared.connect(_on_chat_cleared)
+	if chat_manager:
+		chat_manager.apply_diff_requested.connect(_on_apply_diff_requested)
+		chat_manager.apply_code_requested.connect(_on_apply_code_requested)
+		chat_manager.chat_cleared.connect(_on_chat_cleared)
 
 	# API manager signals
 	if api_manager:

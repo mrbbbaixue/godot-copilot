@@ -15,13 +15,13 @@ var config_path := "user://copilot.cfg"
 func _enter_tree() -> void:
 	# Load configuration
 	_load_config()
-	
+
 	# Create and add the dock to the right side
 	dock = CopilotDockScene.instantiate()
 	dock.name = "Copilot"
 	dock.plugin = self
 	add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock)
-	
+
 	# Create settings dialog
 	settings_dialog = SettingsDialogScene.instantiate()
 	settings_dialog.plugin = self
@@ -66,8 +66,15 @@ func set_setting(section: String, key: String, value: Variant) -> void:
 
 
 func show_settings() -> void:
+	# Ensure we're in the editor
+	if not Engine.is_editor_hint():
+		return
+
 	if settings_dialog:
-		settings_dialog.popup_centered(Vector2i(500, 300))
+		# Ensure the dialog is properly added to the scene tree
+		if not settings_dialog.is_inside_tree():
+			get_editor_interface().get_base_control().add_child(settings_dialog)
+		settings_dialog.popup_centered()
 
 
 func get_current_script_editor() -> ScriptEditorBase:
